@@ -5,6 +5,7 @@ using QueueServer.Api.Hubs;
 using QueueServer.Api.Utils;
 using Serilog;
 using QueueServer.Api;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddSerilogLogging();
@@ -24,6 +25,12 @@ builder.Services.AddSingleton<HubBroadcaster>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Configure JSON serialization to use string enums instead of integers
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 var app = builder.Build();
 
@@ -108,6 +115,9 @@ app.MapPut("/api/settings", async (Dictionary<string,string> updates, ISettingsS
     await hub.SettingsChanged(updates);
     return Results.Ok();
 });
+
+// Debug/health check endpoint
+app.MapGet("/api/debug/ping", () => Results.Ok(new { status = "ok" }));
 
 app.UseSwagger();
 app.UseSwaggerUI();
