@@ -698,10 +698,7 @@
       "System.Threading.Channels/6.0.0": {},
       "Shared/1.0.0": {
         "runtime": {
-          "Shared.dll": {
-            "assemblyVersion": "1.0.0",
-            "fileVersion": "1.0.0.0"
-          }
+          "Shared.dll": {}
         }
       }
     }
