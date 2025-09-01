@@ -62,6 +62,11 @@ Sequence otomatis berdasarkan Date. Tidak perlu hapus data lama.
 - Teller: Logs/teller-*.log
 - Display: Logs/display-*.log
 
+## Catatan Enum
+API mengembalikan nilai enum TicketStatus sebagai string uppercase (contoh: "WAITING", "CALLING", "SERVING") 
+bukan sebagai angka. Hal ini memudahkan client-side filtering tanpa perlu konversi enum. 
+Konfigurasi JsonStringEnumConverter telah diterapkan di Program.cs.
+
 ## TODO / Pengembangan Lanjut (Opsional)
 - User login & roles
 - Multi kategori antrian
