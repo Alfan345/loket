@@ -1,0 +1,82 @@
+<Window x:Class="TellerApp.Wpf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Teller - Aplikasi Antrian" Width="1100" Height="650"
+        WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="240"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="320"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Sidebar: pakai Border agar bisa punya Padding -->
+        <Border Grid.Column="0" Background="#1E2A38" Padding="12">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <TextBlock Text="MENU" Foreground="White" FontWeight="Bold" Margin="0 0 0 16"/>
+                    <Button Content="Panggil Berikutnya" Margin="0 4" Click="CallNext_Click"/>
+                    <Button Content="Recall" Margin="0 4" Click="Recall_Click"/>
+                    <Button Content="Mulai Layani" Margin="0 4" Click="ServeStart_Click"/>
+                    <Button Content="Lewati" Margin="0 4" Click="Skip_Click"/>
+                    <Button Content="Selesai" Margin="0 4" Click="Complete_Click"/>
+                    <Separator Margin="0 12"/>
+                    <TextBlock Text="Loket:" Foreground="White" />
+                    <ComboBox x:Name="LoketCombo" Margin="0 4" SelectedIndex="0">
+                        <ComboBoxItem Content="1"/>
+                        <ComboBoxItem Content="2"/>
+                        <ComboBoxItem Content="3"/>
+                        <ComboBoxItem Content="4"/>
+                        <ComboBoxItem Content="5"/>
+                    </ComboBox>
+                    <Separator Margin="0 12"/>
+                    <TextBlock Text="Prefix Nomor" Foreground="White"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox x:Name="PrefixBox" Width="60" Margin="0 4 4 4"/>
+                        <Button Content="Simpan" Click="SavePrefix_Click"/>
+                    </StackPanel>
+                    <TextBlock Text="Running Text" Foreground="White" Margin="0 8 0 0"/>
+                    <TextBox x:Name="RunningTextBox" AcceptsReturn="True" Height="80" TextWrapping="Wrap" />
+                    <Button Content="Simpan Running Text" Margin="0 6 0 0" Click="SaveRunningText_Click"/>
+                    <TextBlock Foreground="LightGray" FontSize="10" Margin="0 16 0 0"
+                               Text="NOTE: Ubah BaseAddress di MainWindow.xaml.cs jika port server berubah"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Daftar Tiket -->
+        <DockPanel Grid.Column="1" Margin="8">
+            <TextBlock DockPanel.Dock="Top" Text="Daftar Tiket Hari Ini" FontSize="18" FontWeight="Bold" Margin="0 0 0 8"/>
+            <DataGrid x:Name="TicketsGrid" AutoGenerateColumns="False" IsReadOnly="True">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="No" Binding="{Binding TicketNumber}" Width="80"/>
+                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
+                    <DataGridTextColumn Header="Loket" Binding="{Binding CounterNumber}" Width="60"/>
+                    <DataGridTextColumn Header="Dipanggil" Binding="{Binding CalledAt}" Width="140"/>
+                    <DataGridTextColumn Header="Selesai" Binding="{Binding CompletedAt}" Width="140"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </DockPanel>
+
+        <!-- Panel Status Loket -->
+        <Border Grid.Column="2" Margin="8" Padding="16" BorderBrush="#ccc" BorderThickness="1" Background="#222" CornerRadius="8">
+            <StackPanel>
+                <TextBlock Text="Status Loket" FontSize="18" FontWeight="Bold" Foreground="White"/>
+                <TextBlock x:Name="ActiveTicketText" FontSize="48" FontWeight="Bold" Margin="0 20 0 0" Text="-" Foreground="White"/>
+                <TextBlock x:Name="ActiveTicketStatus" FontSize="20" Foreground="LightGray" />
+                <Separator Margin="0 20 0 20"/>
+                <TextBlock Text="Menunggu:" FontWeight="Bold" Foreground="White"/>
+                <ItemsControl x:Name="WaitingList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding TicketNumber}" FontSize="16" Foreground="White"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

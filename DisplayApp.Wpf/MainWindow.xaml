@@ -1,0 +1,82 @@
+<Window x:Class="DisplayApp.Wpf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Display Antrian" WindowState="Maximized" WindowStyle="None" Background="#111"
+        KeyDown="Window_KeyDown" Focusable="True">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="320"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Grid.ColumnSpan="2" Margin="0 0 0 10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="220"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="ANTRIAN LOKET" Foreground="White" FontSize="42" FontWeight="Bold"/>
+            <Image x:Name="LogoImage" Grid.Column="1" HorizontalAlignment="Right" Height="120" Stretch="Uniform" />
+        </Grid>
+
+        <!-- Panel Nomor Aktif -->
+        <Border Grid.Row="1" Grid.Column="0" Background="#222" CornerRadius="16" Padding="24" Margin="0 0 12 0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="SEDANG DIPANGGIL" Foreground="#FFA500" FontSize="30" FontWeight="Bold"/>
+                <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock x:Name="ActiveNumberText" Text="A-000" FontSize="150" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock x:Name="CounterText" Text="Ke Loket -" FontSize="60" FontWeight="SemiBold" Foreground="#59d"/>
+                </StackPanel>
+                <StackPanel Grid.Row="2" Margin="0 20 0 0">
+                    <TextBlock Text="Berikutnya:" Foreground="White" FontSize="26" FontWeight="SemiBold"/>
+                    <ItemsControl x:Name="NextList" Margin="0 8 0 0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" Foreground="LightGray" FontSize="36" Margin="0 4"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Panel Video -->
+        <Border Grid.Row="1" Grid.Column="1" Background="#000" CornerRadius="16" Padding="6">
+            <Grid>
+                <MediaElement x:Name="VideoPlayer" LoadedBehavior="Manual" UnloadedBehavior="Manual" Stretch="Uniform"/>
+                <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Orientation="Horizontal" Margin="4">
+                    <Button Content="Reload Video" Click="ReloadVideo_Click" Padding="6" />
+                </StackPanel>
+                <TextBlock Text="ESC untuk keluar" Foreground="White" FontSize="12"
+                           HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8"/>
+            </Grid>
+        </Border>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" Grid.ColumnSpan="2" Background="#222" CornerRadius="12" Padding="12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="240"/>
+                </Grid.ColumnDefinitions>
+                <Canvas ClipToBounds="True">
+                    <TextBlock x:Name="RunningTextBlock" FontSize="30" Foreground="White" />
+                </Canvas>
+                <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <TextBlock x:Name="ClockText" FontSize="36" Foreground="White" Text="00:00:00"/>
+                    <TextBlock x:Name="DateText" FontSize="18" Foreground="Gray" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
