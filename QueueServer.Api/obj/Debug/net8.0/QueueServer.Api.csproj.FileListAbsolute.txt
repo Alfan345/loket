@@ -135,4 +135,5 @@ C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\QueueServ
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\QueueServer.Api\obj\Debug\net8.0\QueueServer.Api.pdb
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\QueueServer.Api\obj\Debug\net8.0\QueueServer.Api.genruntimeconfig.cache
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\QueueServer.Api\obj\Debug\net8.0\ref\QueueServer.Api.dll
-C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\QueueServer.Api\obj\Debug\net8.0\QueueSer.18E42B5F.Up2Date
+C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\QueueServer.Api\obj\Debug\net8.0\QueueServer.Api.sourcelink.json
+C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\QueueServer.Api\obj\Debug\net8.0\QueueSer.E1A803FF.Up2Date

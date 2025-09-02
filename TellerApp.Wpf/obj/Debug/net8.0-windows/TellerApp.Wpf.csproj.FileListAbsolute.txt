@@ -38,3 +38,4 @@ C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\TellerApp
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\TellerApp.Wpf.pdb
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\TellerApp.Wpf.genruntimeconfig.cache
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\ref\TellerApp.Wpf.dll
+C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\TellerApp.Wpf.sourcelink.json

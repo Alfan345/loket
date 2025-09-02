@@ -9,3 +9,4 @@ C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\Shared\ob
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\Shared\obj\Debug\net8.0\refint\Shared.dll
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\Shared\obj\Debug\net8.0\Shared.pdb
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\Shared\obj\Debug\net8.0\ref\Shared.dll
+C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\Shared\obj\Debug\net8.0\Shared.sourcelink.json
