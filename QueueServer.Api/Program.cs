@@ -5,11 +5,12 @@ using QueueServer.Api.Hubs;
 using QueueServer.Api.Utils;
 using Serilog;
 using QueueServer.Api;
+using System.Text.Json.Serialization; // Tambahan untuk JsonStringEnumConverter
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddSerilogLogging();
 
-// Lokasi DB: gunakan folder App_Data di base directory publish/output
+// Lokasi DB
 var dataDir = Path.Combine(AppContext.BaseDirectory, "App_Data");
 Directory.CreateDirectory(dataDir);
 var dbPath = Path.Combine(dataDir, "queue.db");
@@ -25,20 +26,29 @@ builder.Services.AddSingleton<HubBroadcaster>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// KONFIG: Enum -> String
+builder.Services.ConfigureHttpJsonOptions(o =>
+{
+    o.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    // (Opsional) o.SerializerOptions.WriteIndented = true;
+});
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<QueueDbContext>();
-    // Apply pending migrations (creates DB if missing)
-    db.Database.Migrate(); // akan membuat file jika belum ada
+    db.Database.Migrate();
     var settings = scope.ServiceProvider.GetRequiredService<ISettingsService>();
     await settings.EnsureDefaultsAsync();
 }
 
 app.MapHub<QueueHub>("/hub/queue");
 
-// Endpoint Tickets & Settings (lihat penjelasan sebelumnya)
+// Endpoint debug (untuk verifikasi cepat)
+app.MapGet("/api/debug/ping", () => Results.Ok(new { status = "ok" }));
+
+// Endpoint tiket & queue
 app.MapPost("/api/tickets", async (ITicketService svc, HubBroadcaster hub) =>
 {
     var ticket = await svc.CreateTicketAsync();
@@ -46,8 +56,9 @@ app.MapPost("/api/tickets", async (ITicketService svc, HubBroadcaster hub) =>
     return Results.Ok(ticket);
 });
 
-app.MapPost("/api/queue/next/{counter:int}", async (int counter, ITicketService svc, HubBroadcaster hub) =>
+app.MapPost("/api/queue/next/{counter:int}", async (int counter, ITicketService svc, HubBroadcaster hub, ILogger<Program> logger) =>
 {
+    logger.LogInformation("CallNext requested for counter {Counter}", counter);
     var t = await svc.CallNextAsync(counter);
     if (t == null) return Results.NotFound();
     await hub.TicketCalled(new { t.Id, t.TicketNumber, t.CounterNumber });

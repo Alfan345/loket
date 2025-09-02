@@ -74,3 +74,4 @@ C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\DisplayAp
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\DisplayApp.Wpf\bin\Debug\net8.0-windows\runtimes\win-arm64\native\e_sqlite3.dll
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\DisplayApp.Wpf\bin\Debug\net8.0-windows\runtimes\win-x64\native\e_sqlite3.dll
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\DisplayApp.Wpf\bin\Debug\net8.0-windows\runtimes\win-x86\native\e_sqlite3.dll
+C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\DisplayApp.Wpf\obj\Debug\net8.0-windows\DisplayApp.Wpf.sourcelink.json

@@ -1,13 +1,10 @@
 using System.Net.Http.Json;
-using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.AspNetCore.SignalR.Client;
 using Serilog;
 using System.Net.Http;
-// Removed invalid using directive for QueueServer.Core.Utilities
 
-// NOTE: Ubah base address jika port server bukan 5000
 namespace TellerApp.Wpf;
 
 public partial class MainWindow : Window
@@ -58,6 +55,21 @@ public partial class MainWindow : Window
         try
         {
             var tickets = await _http.GetFromJsonAsync<List<TicketDto>>("/api/tickets/today") ?? new();
+            // Normalisasi angka -> string (jaga-jaga kalau server masih numeric)
+            foreach (var tk in tickets)
+            {
+                tk.Status = tk.Status switch
+                {
+                    "0" => "WAITING",
+                    "1" => "CALLING",
+                    "2" => "SERVING",
+                    "3" => "DONE",
+                    "4" => "NO_SHOW",
+                    "5" => "CANCELED",
+                    _ => tk.Status
+                };
+            }
+
             TicketsGrid.ItemsSource = tickets;
 
             var waiting = tickets.Where(t => t.Status == "WAITING").Take(5).ToList();
@@ -65,7 +77,7 @@ public partial class MainWindow : Window
 
             var counter = GetSelectedCounter();
             var active = tickets.FirstOrDefault(t =>
-                (t.Status == "CALLING" || t.Status == "SERVING") && t.CounterNumber == counter);
+                t.Status == "CALLING" && t.CounterNumber == counter);
 
             ActiveTicketText.Text = active?.TicketNumber ?? "-";
             ActiveTicketStatus.Text = active?.Status ?? "";
@@ -107,7 +119,7 @@ public partial class MainWindow : Window
         }
     }
 
-    // =========== EVENT HANDLERS (harus cocok dengan XAML) ===========
+    // =========== EVENT HANDLERS ===========
 
     private async void CallNext_Click(object sender, RoutedEventArgs e)
     {
@@ -116,72 +128,58 @@ public partial class MainWindow : Window
             var counter = GetSelectedCounter();
             var resp = await _http.PostAsync($"/api/queue/next/{counter}", null);
             if (!resp.IsSuccessStatusCode)
-                MessageBox.Show("Tidak ada tiket WAITING.");
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                MessageBox.Show($"Gagal panggil berikutnya ({(int)resp.StatusCode})\n{body}");
+            }
             await RefreshTickets();
         }
         catch (Exception ex)
         {
             Log.Error(ex, "CallNext_Click");
+            MessageBox.Show("Error Call Next. Lihat log.");
         }
     }
 
+    // Recall otomatis tiket CALLING di loket ini (tanpa pilih grid)
     private async void Recall_Click(object sender, RoutedEventArgs e)
     {
-        if (TicketsGrid.SelectedItem is TicketDto t)
+        try
         {
-            try
+            var counter = GetSelectedCounter();
+            var tickets = await _http.GetFromJsonAsync<List<TicketDto>>("/api/tickets/today") ?? new();
+            foreach (var tk in tickets)
             {
-                await _http.PostAsync($"/api/tickets/{t.Id}/recall", null);
+                tk.Status = tk.Status switch
+                {
+                    "0" => "WAITING",
+                    "1" => "CALLING",
+                    "2" => "SERVING",
+                    "3" => "DONE",
+                    "4" => "NO_SHOW",
+                    "5" => "CANCELED",
+                    _ => tk.Status
+                };
             }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Recall_Click");
-            }
-        }
-    }
 
-    private async void ServeStart_Click(object sender, RoutedEventArgs e)
-    {
-        if (TicketsGrid.SelectedItem is TicketDto t)
-        {
-            try
+            var active = tickets.FirstOrDefault(t => t.Status == "CALLING" && t.CounterNumber == counter);
+            if (active == null)
             {
-                await _http.PostAsync($"/api/tickets/{t.Id}/serveStart", null);
+                MessageBox.Show("Tidak ada tiket CALLING di loket ini.");
+                return;
             }
-            catch (Exception ex)
+            var resp = await _http.PostAsync($"/api/tickets/{active.Id}/recall", null);
+            if (!resp.IsSuccessStatusCode)
             {
-                Log.Error(ex, "ServeStart_Click");
+                var body = await resp.Content.ReadAsStringAsync();
+                MessageBox.Show($"Recall gagal ({(int)resp.StatusCode})\n{body}");
             }
+            await RefreshTickets();
         }
-    }
-
-    private async void Skip_Click(object sender, RoutedEventArgs e)
-    {
-        if (TicketsGrid.SelectedItem is TicketDto t)
+        catch (Exception ex)
         {
-            try
-            {
-                await _http.PostAsync($"/api/tickets/{t.Id}/skip", null);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Skip_Click");
-            }
-        }
-    }
-
-    private async void Complete_Click(object sender, RoutedEventArgs e)
-    {
-        if (TicketsGrid.SelectedItem is TicketDto t)
-        {
-            try
-            {
-                await _http.PostAsync($"/api/tickets/{t.Id}/complete", null);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Complete_Click");
-            }
+            Log.Error(ex, "Recall_Click");
+            MessageBox.Show("Error recall. Lihat log.");
         }
     }
 
@@ -189,8 +187,24 @@ public partial class MainWindow : Window
     {
         try
         {
-            var content = JsonContent.Create(new Dictionary<string, string> { { "Prefix", PrefixBox.Text } });
-            await _http.PutAsync("/api/settings", content);
+            var newPrefix = PrefixBox.Text.Trim();
+            if (string.IsNullOrEmpty(newPrefix))
+            {
+                MessageBox.Show("Prefix kosong.");
+                return;
+            }
+            var content = JsonContent.Create(new Dictionary<string, string> { { "Prefix", newPrefix } });
+            var resp = await _http.PutAsync("/api/settings", content);
+            if (!resp.IsSuccessStatusCode)
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                MessageBox.Show($"Simpan Prefix gagal ({(int)resp.StatusCode})\n{body}");
+            }
+            else
+            {
+                await LoadSettingsAsync();
+                MessageBox.Show("Prefix disimpan.");
+            }
         }
         catch (Exception ex)
         {
@@ -203,7 +217,16 @@ public partial class MainWindow : Window
         try
         {
             var content = JsonContent.Create(new Dictionary<string, string> { { "RunningText", RunningTextBox.Text } });
-            await _http.PutAsync("/api/settings", content);
+            var resp = await _http.PutAsync("/api/settings", content);
+            if (!resp.IsSuccessStatusCode)
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                MessageBox.Show($"Simpan Running Text gagal ({(int)resp.StatusCode})\n{body}");
+            }
+            else
+            {
+                MessageBox.Show("Running Text disimpan.");
+            }
         }
         catch (Exception ex)
         {
@@ -212,7 +235,7 @@ public partial class MainWindow : Window
     }
 }
 
-// DTO sederhana
+// DTO
 public class TicketDto
 {
     public int Id { get; set; }

@@ -15,3 +15,4 @@ C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\QueueServ
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\QueueServer.Core\obj\Debug\net8.0\QueueServer.Core.pdb
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\QueueServer.Core\obj\Debug\net8.0\QueueServer.Core.genruntimeconfig.cache
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\QueueServer.Core\obj\Debug\net8.0\ref\QueueServer.Core.dll
+C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\QueueServer.Core\obj\Debug\net8.0\QueueServer.Core.sourcelink.json

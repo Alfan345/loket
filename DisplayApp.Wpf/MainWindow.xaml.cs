@@ -1,15 +1,16 @@
 using Microsoft.AspNetCore.SignalR.Client;
+using System.Collections.ObjectModel;
 using System.Net.Http.Json;
 using System.Windows;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using System.Windows.Media;
-using System.Windows.Controls;
 using System.IO;
 using Serilog;
-// Removed: using QueueServer.Core.Utilities; (namespace does not exist)
 using System.Net.Http;
-using System.Speech.Synthesis;
+using System.Text.Json;
+using System.Windows.Controls;          // DITAMBAHKAN: agar Canvas, ItemsControl dll dikenali
+using System.Linq;                      // DITAMBAHKAN: untuk Where/OrderBy/FirstOrDefault
 
 namespace DisplayApp.Wpf;
 
@@ -24,12 +25,14 @@ public partial class MainWindow : Window
     private string? _videoPath;
     private string? _logoPath;
 
+    private readonly ObservableCollection<string> _recentCalls = new();
+
     public MainWindow()
     {
         InitializeComponent();
         Loaded += async (_, _) =>
         {
-            Focus(); // agar KeyDown aktif
+            Focus();
             await InitAsync();
         };
     }
@@ -38,7 +41,9 @@ public partial class MainWindow : Window
     {
         try
         {
+            RecentCallsList.ItemsSource = _recentCalls;
             await LoadSettings();
+            await LoadInitialActive();
             await InitHub();
             InitClock();
             InitMarquee();
@@ -54,8 +59,10 @@ public partial class MainWindow : Window
         try
         {
             var settings = await _http.GetFromJsonAsync<Dictionary<string, string>>("/api/settings") ?? new();
+
             settings.TryGetValue("RunningText", out _runningText);
             RunningTextBlock.Text = _runningText;
+
             settings.TryGetValue("LogoPath", out _logoPath);
             settings.TryGetValue("VideoPath", out _videoPath);
             settings.TryGetValue("ShowLogo", out var showLogo);
@@ -68,9 +75,16 @@ public partial class MainWindow : Window
                     var bi = new System.Windows.Media.Imaging.BitmapImage(new Uri(Path.GetFullPath(_logoPath)));
                     LogoImage.Source = bi;
                 }
-                catch (Exception ex) { Log.Warning(ex, "Logo load fail"); LogoImage.Source = null; }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Logo load fail");
+                    LogoImage.Source = null;
+                }
             }
-            else LogoImage.Source = null;
+            else
+            {
+                LogoImage.Source = null;
+            }
 
             if (showVideo == "true")
                 LoadAndPlayVideo();
@@ -83,6 +97,47 @@ public partial class MainWindow : Window
         }
     }
 
+    private async Task LoadInitialActive()
+    {
+        try
+        {
+            var tickets = await _http.GetFromJsonAsync<List<TicketDto>>("/api/tickets/today") ?? new();
+            NormalizeStatuses(tickets);
+
+            var latestCalling = tickets
+                .Where(t => t.Status == "CALLING")
+                .OrderByDescending(t => t.CalledAt ?? DateTime.MinValue)
+                .FirstOrDefault();
+
+            if (latestCalling != null)
+            {
+                SetActive(latestCalling.TicketNumber, latestCalling.CounterNumber ?? 0);
+                AddRecentCall(latestCalling);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "LoadInitialActive");
+        }
+    }
+
+    private void NormalizeStatuses(List<TicketDto> tickets)
+    {
+        foreach (var t in tickets)
+        {
+            t.Status = t.Status switch
+            {
+                "0" => "WAITING",
+                "1" => "CALLING",
+                "2" => "SERVING",
+                "3" => "DONE",
+                "4" => "NO_SHOW",
+                "5" => "CANCELED",
+                _ => t.Status
+            };
+        }
+    }
+
     private async Task InitHub()
     {
         _hub = new HubConnectionBuilder()
@@ -90,73 +145,94 @@ public partial class MainWindow : Window
             .WithAutomaticReconnect()
             .Build();
 
-        _hub.On<dynamic>("TicketCalled", data =>
+        _hub.On<object>("TicketCalled", payload =>
         {
             try
             {
-                string ticketNumber = data?.TicketNumber;
-                int counter = data?.CounterNumber;
-                Dispatcher.Invoke(() =>
+                string? ticketNumber = null;
+                int counter = 0;
+
+                if (payload is JsonElement je)
                 {
-                    SetActive(ticketNumber, counter);
-                    AnimateActiveFlash();
-                    _ = RefreshNextList();
-                    _ = PlayChimeAndTts(ticketNumber, counter);
-                });
+                    ticketNumber = je.GetPropertyOrNull("TicketNumber")?.GetString();
+                    counter = je.GetPropertyOrNull("CounterNumber")?.GetInt32() ?? 0;
+                }
+                else
+                {
+                    dynamic d = payload!;
+                    ticketNumber = d?.TicketNumber;
+                    counter = d?.CounterNumber ?? 0;
+                }
+
+                if (!string.IsNullOrWhiteSpace(ticketNumber))
+                {
+                    Dispatcher.Invoke(() => OnTicketCalled(ticketNumber, counter));
+                }
             }
-            catch (Exception ex) { Log.Error(ex, "TicketCalled handler"); }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "TicketCalled handler");
+            }
         });
 
-        _hub.On<dynamic>("TicketUpdated", _ => Dispatcher.Invoke(() => _ = RefreshNextList()));
-        _hub.On<dynamic>("TicketCreated", _ => Dispatcher.Invoke(() => _ = RefreshNextList()));
-        _hub.On<Dictionary<string, string>>("SettingsChanged", dict =>
-        {
-            try
-            {
-                if (dict.TryGetValue("RunningText", out var rt))
-                {
-                    _runningText = rt;
-                    Dispatcher.Invoke(() => RunningTextBlock.Text = _runningText);
-                }
-                if (dict.ContainsKey("LogoPath") || dict.ContainsKey("VideoPath"))
-                    Dispatcher.Invoke(async () => await LoadSettings());
-            }
-            catch (Exception ex) { Log.Error(ex, "SettingsChanged handler"); }
-        });
+        _hub.On<object>("SettingsChanged", _ =>
+            Dispatcher.Invoke(async () => await LoadSettings()));
 
         await _hub.StartAsync();
         Log.Information("Hub connected (Display)");
-        await RefreshNextList();
     }
 
-    private async Task RefreshNextList()
+    private void OnTicketCalled(string ticketNumber, int counter)
     {
-        try
-        {
-            var tickets = await _http.GetFromJsonAsync<List<TicketDto>>("/api/tickets/today") ?? new();
-            var calling = tickets.Where(t => t.Status == "CALLING")
-                                 .OrderByDescending(t => t.CalledAt)
-                                 .FirstOrDefault();
-            if (calling != null)
-                SetActive(calling.TicketNumber, calling.CounterNumber ?? 0);
+        SetActive(ticketNumber, counter);
 
-            var waiting = tickets.Where(t => t.Status == "WAITING")
-                                 .OrderBy(t => t.Sequence)
-                                 .Take(5)
-                                 .Select(t => t.TicketNumber)
-                                 .ToList();
-            NextList.ItemsSource = waiting;
-        }
-        catch (Exception ex)
+        AddRecentCall(new TicketDto
         {
-            Log.Error(ex, "RefreshNextList");
-        }
+            TicketNumber = ticketNumber,
+            CounterNumber = counter
+        });
+
+        AnimateActiveFlash();
+        _ = PlayChimeAndTts(ticketNumber, counter);
+    }
+
+    private void AddRecentCall(TicketDto t)
+    {
+        var seq = TryExtractSequence(t.TicketNumber, out int s) ? s.ToString() : t.TicketNumber;
+        var text = $"Nomor {seq} Loket {t.CounterNumber}";
+        if (_recentCalls.FirstOrDefault() == text)
+            return;
+
+        _recentCalls.Insert(0, text);
+        while (_recentCalls.Count > 3)
+            _recentCalls.RemoveAt(_recentCalls.Count - 1);
     }
 
     private void SetActive(string ticketNumber, int counter)
     {
-        ActiveNumberText.Text = ticketNumber;
-        CounterText.Text = $"Ke Loket {counter}";
+        ActiveNumberText.Text = TryExtractSequence(ticketNumber, out int seq)
+            ? seq.ToString()
+            : ticketNumber;
+
+        ActiveCounterText.Text = $"Ke Loket {counter}";
+    }
+
+    private bool TryExtractSequence(string ticketNumber, out int seq)
+    {
+        seq = 0;
+        var parts = ticketNumber.Split('-', '_');
+        if (parts.Length >= 2 && int.TryParse(parts[1], out int v))
+        {
+            seq = v;
+            return true;
+        }
+        var digits = new string(ticketNumber.Where(char.IsDigit).ToArray());
+        if (int.TryParse(digits, out v))
+        {
+            seq = v;
+            return true;
+        }
+        return false;
     }
 
     private void AnimateActiveFlash()
@@ -165,9 +241,8 @@ public partial class MainWindow : Window
         {
             From = Colors.White,
             To = Colors.Yellow,
-            Duration = TimeSpan.FromMilliseconds(300),
-            AutoReverse = true,
-            RepeatBehavior = new RepeatBehavior(3)
+            Duration = TimeSpan.FromMilliseconds(200),
+            AutoReverse = true
         };
         var brush = new SolidColorBrush(Colors.White);
         ActiveNumberText.Foreground = brush;
@@ -194,7 +269,7 @@ public partial class MainWindow : Window
             if (_marqueeX < -RunningTextBlock.ActualWidth)
                 _marqueeX = ActualWidth;
             Canvas.SetLeft(RunningTextBlock, _marqueeX);
-            Canvas.SetTop(RunningTextBlock, 0);
+            Canvas.SetTop(RunningTextBlock, 20 - RunningTextBlock.FontSize / 2);
         };
         _marqueeTimer.Start();
     }
@@ -224,19 +299,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ReloadVideo_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            VideoPlayer.Stop();
-            LoadAndPlayVideo();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "ReloadVideo_Click");
-        }
-    }
-
     private async Task PlayChimeAndTts(string ticketNumber, int counter)
     {
         await Task.Run(() =>
@@ -252,15 +314,13 @@ public partial class MainWindow : Window
                 using var synth = new System.Speech.Synthesis.SpeechSynthesizer();
                 synth.Rate = 0;
 
-                string verbalNomor = ticketNumber;
-                if (NumberToBahasa.TryParseSequenceFromTicketNumber(ticketNumber, out int seq))
+                string verbal = ticketNumber;
+                if (TryExtractSequence(ticketNumber, out int seq))
                 {
-                    var words = NumberToBahasa.ToWords(seq);
                     var prefix = ticketNumber.Split('-', '_')[0];
-                    verbalNomor = $"{prefix} {words}";
+                    verbal = $"{prefix} {seq}";
                 }
-                var verbalLoket = NumberToBahasa.LoketToWords(counter);
-                var kalimat = $"Nomor antrian {verbalNomor}, silakan ke loket {verbalLoket}.";
+                var kalimat = $"Nomor antrian {verbal}, silakan ke loket {counter}.";
                 synth.Speak(kalimat);
             }
             catch (Exception ex)
@@ -279,12 +339,23 @@ public partial class MainWindow : Window
     }
 }
 
+// DTO
 public class TicketDto
 {
     public int Id { get; set; }
     public string TicketNumber { get; set; } = "";
     public string Status { get; set; } = "";
     public int? CounterNumber { get; set; }
-    public int Sequence { get; set; }
     public DateTime? CalledAt { get; set; }
+}
+
+// Extension helper untuk JsonElement
+internal static class JsonElementExt
+{
+    public static JsonElement? GetPropertyOrNull(this JsonElement e, string name)
+    {
+        if (e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var val))
+            return val;
+        return null;
+    }
 }
