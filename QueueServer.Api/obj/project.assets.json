@@ -3674,11 +3674,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\ASUS\\OneDrive\\Documents\\Kuliah Tel-U\\magang\\loket\\QueueSystem\\QueueServer.Api\\QueueServer.Api.csproj",
-      "projectName": "QueueServer.Api",
-      "projectPath": "C:\\Users\\ASUS\\OneDrive\\Documents\\Kuliah Tel-U\\magang\\loket\\QueueSystem\\QueueServer.Api\\QueueServer.Api.csproj",
+      "projectUniqueName": "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\QueueServer.API.csproj",
+      "projectName": "QueueServer.API",
+      "projectPath": "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\QueueServer.API.csproj",
       "packagesPath": "C:\\Users\\ASUS\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\ASUS\\OneDrive\\Documents\\Kuliah Tel-U\\magang\\loket\\QueueSystem\\QueueServer.Api\\obj\\",
+      "outputPath": "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\ASUS\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -3693,11 +3693,11 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Users\\ASUS\\OneDrive\\Documents\\Kuliah Tel-U\\magang\\loket\\QueueSystem\\QueueServer.Core\\QueueServer.Core.csproj": {
-              "projectPath": "C:\\Users\\ASUS\\OneDrive\\Documents\\Kuliah Tel-U\\magang\\loket\\QueueSystem\\QueueServer.Core\\QueueServer.Core.csproj"
+            "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Core\\QueueServer.Core.csproj": {
+              "projectPath": "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Core\\QueueServer.Core.csproj"
             },
-            "C:\\Users\\ASUS\\OneDrive\\Documents\\Kuliah Tel-U\\magang\\loket\\QueueSystem\\Shared\\Shared.csproj": {
-              "projectPath": "C:\\Users\\ASUS\\OneDrive\\Documents\\Kuliah Tel-U\\magang\\loket\\QueueSystem\\Shared\\Shared.csproj"
+            "D:\\Kuliah\\loket\\QueueSystem\\Shared\\Shared.csproj": {
+              "projectPath": "D:\\Kuliah\\loket\\QueueSystem\\Shared\\Shared.csproj"
             }
           }
         }

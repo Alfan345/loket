@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\ASUS\\OneDrive\\Documents\\Kuliah Tel-U\\magang\\loket\\QueueSystem\\Shared\\Shared.csproj",
+      "projectUniqueName": "D:\\Kuliah\\loket\\QueueSystem\\Shared\\Shared.csproj",
       "projectName": "Shared",
-      "projectPath": "C:\\Users\\ASUS\\OneDrive\\Documents\\Kuliah Tel-U\\magang\\loket\\QueueSystem\\Shared\\Shared.csproj",
+      "projectPath": "D:\\Kuliah\\loket\\QueueSystem\\Shared\\Shared.csproj",
       "packagesPath": "C:\\Users\\ASUS\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\ASUS\\OneDrive\\Documents\\Kuliah Tel-U\\magang\\loket\\QueueSystem\\Shared\\obj\\",
+      "outputPath": "D:\\Kuliah\\loket\\QueueSystem\\Shared\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\ASUS\\AppData\\Roaming\\NuGet\\NuGet.Config"
