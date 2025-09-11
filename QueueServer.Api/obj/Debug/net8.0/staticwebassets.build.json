@@ -1,8 +1,8 @@
 {
   "Version": 1,
-  "Hash": "rvebIRkTHcAoZ+gF9Wg+VxURT3uGMsFD2u4LGboo77I=",
-  "Source": "QueueServer.Api",
-  "BasePath": "_content/QueueServer.Api",
+  "Hash": "qbGmdzNkLsodSyKsQdo6v4pRWkLdTB6GvRUZCTkS0pw=",
+  "Source": "QueueServer.API",
+  "BasePath": "_content/QueueServer.API",
   "Mode": "Default",
   "ManifestType": "Build",
   "ReferencedProjectsConfiguration": [],

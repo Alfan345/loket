@@ -8,6 +8,6 @@ build_property.PlatformNeutralAssembly =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = QueueServer.Core
-build_property.ProjectDir = C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\QueueServer.Core\
+build_property.ProjectDir = D:\Kuliah\loket\QueueSystem\QueueServer.Core\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 

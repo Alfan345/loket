@@ -39,3 +39,44 @@ C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\TellerApp
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\TellerApp.Wpf.genruntimeconfig.cache
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\ref\TellerApp.Wpf.dll
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\TellerApp.Wpf.sourcelink.json
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\TellerApp.Wpf.exe
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\TellerApp.Wpf.deps.json
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\TellerApp.Wpf.runtimeconfig.json
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\TellerApp.Wpf.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\TellerApp.Wpf.pdb
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\Microsoft.AspNetCore.Connections.Abstractions.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\Microsoft.AspNetCore.Http.Connections.Client.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\Microsoft.AspNetCore.Http.Connections.Common.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\Microsoft.AspNetCore.SignalR.Client.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\Microsoft.AspNetCore.SignalR.Client.Core.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\Microsoft.AspNetCore.SignalR.Common.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\Microsoft.AspNetCore.SignalR.Protocols.Json.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\Microsoft.Extensions.DependencyInjection.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\Microsoft.Extensions.DependencyInjection.Abstractions.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\Microsoft.Extensions.Features.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\Microsoft.Extensions.Logging.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\Microsoft.Extensions.Logging.Abstractions.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\Microsoft.Extensions.Options.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\Microsoft.Extensions.Primitives.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\Serilog.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\Serilog.Sinks.File.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\System.IO.Pipelines.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\Shared.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\bin\Debug\net8.0-windows\Shared.pdb
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\TellerApp.Wpf.csproj.AssemblyReference.cache
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\MainWindow.baml
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\MainWindow.g.cs
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\App.g.cs
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\TellerApp.Wpf_MarkupCompile.cache
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\TellerApp.Wpf.g.resources
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\TellerApp.Wpf.GeneratedMSBuildEditorConfig.editorconfig
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\TellerApp.Wpf.AssemblyInfoInputs.cache
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\TellerApp.Wpf.AssemblyInfo.cs
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\TellerApp.Wpf.csproj.CoreCompileInputs.cache
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\TellerApp.Wpf.sourcelink.json
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\TellerAp.F2F023BB.Up2Date
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\TellerApp.Wpf.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\refint\TellerApp.Wpf.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\TellerApp.Wpf.pdb
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\TellerApp.Wpf.genruntimeconfig.cache
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\ref\TellerApp.Wpf.dll

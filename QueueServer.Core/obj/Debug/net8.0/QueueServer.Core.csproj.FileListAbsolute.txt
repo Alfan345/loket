@@ -16,3 +16,21 @@ C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\QueueServ
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\QueueServer.Core\obj\Debug\net8.0\QueueServer.Core.genruntimeconfig.cache
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\QueueServer.Core\obj\Debug\net8.0\ref\QueueServer.Core.dll
 C:\Users\ASUS\OneDrive\Documents\Kuliah Tel-U\magang\loket\QueueSystem\QueueServer.Core\obj\Debug\net8.0\QueueServer.Core.sourcelink.json
+D:\Kuliah\loket\QueueSystem\QueueServer.Core\bin\Debug\net8.0\QueueServer.Core.deps.json
+D:\Kuliah\loket\QueueSystem\QueueServer.Core\bin\Debug\net8.0\QueueServer.Core.runtimeconfig.json
+D:\Kuliah\loket\QueueSystem\QueueServer.Core\bin\Debug\net8.0\QueueServer.Core.dll
+D:\Kuliah\loket\QueueSystem\QueueServer.Core\bin\Debug\net8.0\QueueServer.Core.pdb
+D:\Kuliah\loket\QueueSystem\QueueServer.Core\bin\Debug\net8.0\Shared.dll
+D:\Kuliah\loket\QueueSystem\QueueServer.Core\bin\Debug\net8.0\Shared.pdb
+D:\Kuliah\loket\QueueSystem\QueueServer.Core\obj\Debug\net8.0\QueueServer.Core.csproj.AssemblyReference.cache
+D:\Kuliah\loket\QueueSystem\QueueServer.Core\obj\Debug\net8.0\QueueServer.Core.GeneratedMSBuildEditorConfig.editorconfig
+D:\Kuliah\loket\QueueSystem\QueueServer.Core\obj\Debug\net8.0\QueueServer.Core.AssemblyInfoInputs.cache
+D:\Kuliah\loket\QueueSystem\QueueServer.Core\obj\Debug\net8.0\QueueServer.Core.AssemblyInfo.cs
+D:\Kuliah\loket\QueueSystem\QueueServer.Core\obj\Debug\net8.0\QueueServer.Core.csproj.CoreCompileInputs.cache
+D:\Kuliah\loket\QueueSystem\QueueServer.Core\obj\Debug\net8.0\QueueServer.Core.sourcelink.json
+D:\Kuliah\loket\QueueSystem\QueueServer.Core\obj\Debug\net8.0\QueueSer.0F2401A5.Up2Date
+D:\Kuliah\loket\QueueSystem\QueueServer.Core\obj\Debug\net8.0\QueueServer.Core.dll
+D:\Kuliah\loket\QueueSystem\QueueServer.Core\obj\Debug\net8.0\refint\QueueServer.Core.dll
+D:\Kuliah\loket\QueueSystem\QueueServer.Core\obj\Debug\net8.0\QueueServer.Core.pdb
+D:\Kuliah\loket\QueueSystem\QueueServer.Core\obj\Debug\net8.0\QueueServer.Core.genruntimeconfig.cache
+D:\Kuliah\loket\QueueSystem\QueueServer.Core\obj\Debug\net8.0\ref\QueueServer.Core.dll

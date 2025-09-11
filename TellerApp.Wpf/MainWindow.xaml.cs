@@ -1,247 +1,174 @@
-using System.Net.Http.Json;
-using System.Windows;
-using System.Windows.Controls;
-using Microsoft.AspNetCore.SignalR.Client;
-using Serilog;
+using System;
 using System.Net.Http;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Input;
+using System.Windows.Controls; // for controls referenced by name
+using Microsoft.AspNetCore.SignalR.Client;
+using Shared.Contracts; // gunakan konstanta HubEvents
+using Serilog;
 
-namespace TellerApp.Wpf;
-
+// NOTE: Ubah base address jika port server bukan 5000
+namespace TellerApp.Wpf
+{
 public partial class MainWindow : Window
 {
-    private readonly HttpClient _http = new() { BaseAddress = new Uri("http://localhost:5000") };
     private HubConnection? _hub;
+    private readonly HttpClient _http = new() { BaseAddress = new Uri("http://localhost:5000") };
+    private string _loket = "1";
+    private bool _windowLoaded;
 
     public MainWindow()
     {
         InitializeComponent();
-        _ = InitAsync();
+        Log.Information("Teller MainWindow constructed");
+        KeyDown += (_, e) => { if (e.Key == Key.Escape) Close(); };
+        Loaded += async (_, _) =>
+        {
+            _windowLoaded = true;
+            SetStatus("Menunggu koneksi...");
+            // Auto connect sekali saat startup
+            await ConnectAsync();
+        };
     }
 
-    private async Task InitAsync()
+    private static string WithoutPrefix(string ticketNumber)
     {
-        try
-        {
-            await LoadSettingsAsync();
-            await RefreshTickets();
-            await ConnectHub();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "InitAsync failed");
-            MessageBox.Show("Gagal init aplikasi. Lihat log.");
-        }
+        // Format "A-023" => "023"
+        var parts = ticketNumber.Split('-', '_');
+        return parts.Length > 1 ? parts[1] : ticketNumber;
     }
 
-    private async Task LoadSettingsAsync()
+    private async void ConnectButton_Click(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            var dict = await _http.GetFromJsonAsync<Dictionary<string, string>>("/api/settings");
-            if (dict != null)
-            {
-                if (dict.TryGetValue("Prefix", out var p)) PrefixBox.Text = p;
-                if (dict.TryGetValue("RunningText", out var r)) RunningTextBox.Text = r;
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "LoadSettingsAsync");
-        }
+        await ConnectAsync();
     }
 
-    private async Task RefreshTickets()
+    private async Task ConnectAsync()
     {
-        try
-        {
-            var tickets = await _http.GetFromJsonAsync<List<TicketDto>>("/api/tickets/today") ?? new();
-            // Normalisasi angka -> string (jaga-jaga kalau server masih numeric)
-            foreach (var tk in tickets)
-            {
-                tk.Status = tk.Status switch
-                {
-                    "0" => "WAITING",
-                    "1" => "CALLING",
-                    "2" => "SERVING",
-                    "3" => "DONE",
-                    "4" => "NO_SHOW",
-                    "5" => "CANCELED",
-                    _ => tk.Status
-                };
-            }
-
-            TicketsGrid.ItemsSource = tickets;
-
-            var waiting = tickets.Where(t => t.Status == "WAITING").Take(5).ToList();
-            WaitingList.ItemsSource = waiting;
-
-            var counter = GetSelectedCounter();
-            var active = tickets.FirstOrDefault(t =>
-                t.Status == "CALLING" && t.CounterNumber == counter);
-
-            ActiveTicketText.Text = active?.TicketNumber ?? "-";
-            ActiveTicketStatus.Text = active?.Status ?? "";
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "RefreshTickets");
-        }
-    }
-
-    private int GetSelectedCounter()
-    {
-        if (LoketCombo.SelectedItem is ComboBoxItem c &&
-            int.TryParse(c.Content?.ToString(), out int v))
-            return v;
-        return 1;
-    }
-
-    private async Task ConnectHub()
-    {
+        if (_hub is { State: HubConnectionState.Connected }) return;
+        if (ConnectButton != null) ConnectButton.IsEnabled = false;
+        SetStatus("Menghubungkan...");
         try
         {
             _hub = new HubConnectionBuilder()
-                .WithUrl("http://localhost:5000/hub/queue")
+                .WithUrl("http://localhost:5000/hub/queue") // server maps MapHub<QueueHub>("/hub/queue")
                 .WithAutomaticReconnect()
                 .Build();
 
-            _hub.On<object>("TicketCreated", async _ => await RefreshTickets());
-            _hub.On<object>("TicketUpdated", async _ => await RefreshTickets());
-            _hub.On<object>("TicketCalled", async _ => await RefreshTickets());
-            _hub.On<object>("SettingsChanged", async _ => await LoadSettingsAsync());
+            // Terima event TicketCalled dari server
+            _hub.On<TicketCalledEvent>("TicketCalled", e =>
+            {
+                if (e.CounterNumber?.ToString() == _loket)
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        CurrentNumberText.Text = WithoutPrefix(e.TicketNumber);
+                        LoketLabel.Text = $"Loket: {e.CounterNumber}";
+                        SetStatus("Dipanggil");
+                    });
+                }
+            });
 
             await _hub.StartAsync();
-            Log.Information("Hub connected");
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "ConnectHub");
-        }
-    }
-
-    // =========== EVENT HANDLERS ===========
-
-    private async void CallNext_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            var counter = GetSelectedCounter();
-            var resp = await _http.PostAsync($"/api/queue/next/{counter}", null);
-            if (!resp.IsSuccessStatusCode)
+            SetStatus("Terhubung");
+            if (NextButton != null)
             {
-                var body = await resp.Content.ReadAsStringAsync();
-                MessageBox.Show($"Gagal panggil berikutnya ({(int)resp.StatusCode})\n{body}");
+                NextButton.IsEnabled = true;
+                NextButton.Visibility = Visibility.Visible;
             }
-            await RefreshTickets();
+            if (ConnectButton != null)
+            {
+                ConnectButton.Visibility = Visibility.Collapsed;
+            }
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "CallNext_Click");
-            MessageBox.Show("Error Call Next. Lihat log.");
+            SetStatus("Gagal konek");
+            if (ConnectButton != null)
+            {
+                ConnectButton.Content = "Coba Lagi";
+                ConnectButton.IsEnabled = true;
+                ConnectButton.Visibility = Visibility.Visible;
+            }
+            Console.WriteLine(ex);
         }
     }
 
-    // Recall otomatis tiket CALLING di loket ini (tanpa pilih grid)
-    private async void Recall_Click(object sender, RoutedEventArgs e)
+    private async void NextButton_Click(object sender, RoutedEventArgs e)
     {
+        NextButton.IsEnabled = false;
+        SetStatus("Memanggil...");
         try
         {
-            var counter = GetSelectedCounter();
-            var tickets = await _http.GetFromJsonAsync<List<TicketDto>>("/api/tickets/today") ?? new();
-            foreach (var tk in tickets)
+            var resp = await _http.PostAsync($"/api/queue/next/{_loket}", null);
+            if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                tk.Status = tk.Status switch
+                SetStatus("Kosong");
+            }
+            else if (resp.IsSuccessStatusCode)
+            {
+                var ticket = await resp.Content.ReadFromJsonAsync<TicketResponse>();
+                if (ticket != null)
                 {
-                    "0" => "WAITING",
-                    "1" => "CALLING",
-                    "2" => "SERVING",
-                    "3" => "DONE",
-                    "4" => "NO_SHOW",
-                    "5" => "CANCELED",
-                    _ => tk.Status
-                };
-            }
-
-            var active = tickets.FirstOrDefault(t => t.Status == "CALLING" && t.CounterNumber == counter);
-            if (active == null)
-            {
-                MessageBox.Show("Tidak ada tiket CALLING di loket ini.");
-                return;
-            }
-            var resp = await _http.PostAsync($"/api/tickets/{active.Id}/recall", null);
-            if (!resp.IsSuccessStatusCode)
-            {
-                var body = await resp.Content.ReadAsStringAsync();
-                MessageBox.Show($"Recall gagal ({(int)resp.StatusCode})\n{body}");
-            }
-            await RefreshTickets();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Recall_Click");
-            MessageBox.Show("Error recall. Lihat log.");
-        }
-    }
-
-    private async void SavePrefix_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            var newPrefix = PrefixBox.Text.Trim();
-            if (string.IsNullOrEmpty(newPrefix))
-            {
-                MessageBox.Show("Prefix kosong.");
-                return;
-            }
-            var content = JsonContent.Create(new Dictionary<string, string> { { "Prefix", newPrefix } });
-            var resp = await _http.PutAsync("/api/settings", content);
-            if (!resp.IsSuccessStatusCode)
-            {
-                var body = await resp.Content.ReadAsStringAsync();
-                MessageBox.Show($"Simpan Prefix gagal ({(int)resp.StatusCode})\n{body}");
+                    CurrentNumberText.Text = WithoutPrefix(ticket.TicketNumber);
+                    LoketLabel.Text = $"Loket: {ticket.CounterNumber}";
+                    SetStatus("Dipanggil");
+                }
             }
             else
             {
-                await LoadSettingsAsync();
-                MessageBox.Show("Prefix disimpan.");
+                SetStatus("Gagal panggil");
             }
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "SavePrefix_Click");
+            SetStatus("Error panggil");
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            NextButton.IsEnabled = true;
         }
     }
 
-    private async void SaveRunningText_Click(object sender, RoutedEventArgs e)
+    private void SetStatus(string s)
     {
-        try
+        if (!_windowLoaded)
         {
-            var content = JsonContent.Create(new Dictionary<string, string> { { "RunningText", RunningTextBox.Text } });
-            var resp = await _http.PutAsync("/api/settings", content);
-            if (!resp.IsSuccessStatusCode)
-            {
-                var body = await resp.Content.ReadAsStringAsync();
-                MessageBox.Show($"Simpan Running Text gagal ({(int)resp.StatusCode})\n{body}");
-            }
-            else
-            {
-                MessageBox.Show("Running Text disimpan.");
-            }
+            // Tunda sampai Loaded untuk menghindari NullReference.
+            Dispatcher.BeginInvoke(() => SetStatus(s));
+            return;
         }
-        catch (Exception ex)
+        StatusText.Text = $"Status: {s}";
+    }
+
+    private void LoketCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (LoketCombo.SelectedItem is ComboBoxItem item && item.Content is string s && !string.IsNullOrWhiteSpace(s))
         {
-            Log.Error(ex, "SaveRunningText_Click");
+            _loket = s.Trim();
+            // Hindari NullReference saat initialization; hanya update status jika window sudah loaded.
+            SetStatus($"Loket {_loket} dipilih");
         }
     }
 }
 
-// DTO
-public class TicketDto
+// Kelas untuk respon POST /api/queue/next/{counter}
+public class TicketResponse
 {
     public int Id { get; set; }
-    public string TicketNumber { get; set; } = "";
-    public string Status { get; set; } = "";
+    public string TicketNumber { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
     public int? CounterNumber { get; set; }
-    public DateTime? CalledAt { get; set; }
-    public DateTime? CompletedAt { get; set; }
+}
+
+// Event broadcast dari server (TicketCalled)
+public class TicketCalledEvent
+{
+    public int Id { get; set; }
+    public string TicketNumber { get; set; } = string.Empty;
+    public int? CounterNumber { get; set; }
+}
 }
