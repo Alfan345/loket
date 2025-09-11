@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v8.0": {
-      "QueueServer.Api/1.0.0": {
+      "QueueServer.API/1.0.0": {
         "dependencies": {
           "Microsoft.EntityFrameworkCore.Design": "8.0.0",
           "Microsoft.EntityFrameworkCore.Sqlite": "8.0.0",
@@ -18,7 +18,7 @@
           "Swashbuckle.AspNetCore": "6.5.0"
         },
         "runtime": {
-          "QueueServer.Api.dll": {}
+          "QueueServer.API.dll": {}
         }
       },
       "Humanizer.Core/2.14.1": {
@@ -852,7 +852,7 @@
     }
   },
   "libraries": {
-    "QueueServer.Api/1.0.0": {
+    "QueueServer.API/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
