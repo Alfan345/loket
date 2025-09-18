@@ -3674,9 +3674,9 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\QueueServer.API.csproj",
-      "projectName": "QueueServer.API",
-      "projectPath": "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\QueueServer.API.csproj",
+      "projectUniqueName": "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\QueueServer.Api.csproj",
+      "projectName": "QueueServer.Api",
+      "projectPath": "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\QueueServer.Api.csproj",
       "packagesPath": "C:\\Users\\ASUS\\.nuget\\packages\\",
       "outputPath": "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\obj\\",
       "projectStyle": "PackageReference",
