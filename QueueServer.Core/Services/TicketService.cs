@@ -30,7 +30,8 @@ public class TicketService : ITicketService
         {
             Date = today,
             Sequence = nextSeq,
-            TicketNumber = $"{prefix}-{nextSeq:000}",
+            // Hilangkan leading zero (sebelumnya :000)
+            TicketNumber = $"{prefix}-{nextSeq}",
             Status = TicketStatus.WAITING
         };
         _db.Tickets.Add(ticket);
@@ -58,7 +59,7 @@ public class TicketService : ITicketService
         {
             Date = today,
             Sequence = maxSeq + 1,
-            TicketNumber = $"{prefix}-{(maxSeq + 1):000}",
+            TicketNumber = $"{(maxSeq + 1)}", // tanpa prefix & tanpa leading zero
             Status = TicketStatus.WAITING
         };
         _db.Tickets.Add(ticket);
