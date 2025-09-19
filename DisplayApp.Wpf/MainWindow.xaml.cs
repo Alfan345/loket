@@ -15,6 +15,7 @@ using System.Windows.Markup;
 using System;
 using System.Threading;
 using System.Collections.Generic;
+using System.Windows.Media.Imaging;
 
 namespace DisplayApp.Wpf
 {
@@ -48,6 +49,13 @@ namespace DisplayApp.Wpf
         private int? _activeCounter;
 
         private readonly ObservableCollection<string> _recentCalls = new();
+
+        // ROTASI LOGO
+        private readonly DispatcherTimer _logoTimer = new();
+        private readonly List<string> _logoFiles = new();
+        private int _logoIndex = -1;
+        private bool _logoUseA = true;
+        private const int LogoRotateSeconds = 6;
 
         private static string AudioRoot =>
             Path.Combine(AppContext.BaseDirectory, "audio");
@@ -98,24 +106,8 @@ namespace DisplayApp.Wpf
                 settings.TryGetValue("ShowLogo", out var showLogo);
                 settings.TryGetValue("ShowVideo", out var showVideo);
 
-                var logoImage = this.FindName("LogoImage") as System.Windows.Controls.Image;
-                if (!string.IsNullOrWhiteSpace(_logoPath) && File.Exists(_logoPath) && showLogo == "true" && logoImage != null)
-                {
-                    try
-                    {
-                        var bi = new System.Windows.Media.Imaging.BitmapImage(new Uri(Path.GetFullPath(_logoPath)));
-                        logoImage.Source = bi;
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Warning(ex, "Logo load fail");
-                        logoImage.Source = null;
-                    }
-                }
-                else if (logoImage != null)
-                {
-                    logoImage.Source = null;
-                }
+                // Mulai/stop rotasi logo
+                StartLogoRotation(showLogo == "true");
 
                 var videoPlayer = this.FindName("VideoPlayer") as MediaElement;
                 if (showVideo == "true")
@@ -669,6 +661,118 @@ namespace DisplayApp.Wpf
             ActiveNumberText.Text = numberText;
             ActiveCounterText.Text = $"Ke Loket {loketText}";
             BlinkActiveNumber();
+        }
+
+        // Bangun daftar file logo dari folder "Resources"
+        private void BuildLogoList()
+        {
+            _logoFiles.Clear();
+            string[] names = { "logo.png", "posaja.png", "pospay.png" };
+            foreach (var n in names)
+            {
+                var p = FindResourceFile(n);
+                if (p != null) _logoFiles.Add(p);
+            }
+        }
+
+        private static string? FindResourceFile(string fileName)
+        {
+            // Cari di beberapa root umum
+            var roots = new[]
+            {
+                AppContext.BaseDirectory,
+                Path.Combine(AppContext.BaseDirectory, "Resources"),
+                Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Resources")),
+                Path.Combine(Directory.GetCurrentDirectory(), "Resources")
+            };
+            foreach (var r in roots)
+            {
+                var p = Path.Combine(r, fileName);
+                if (File.Exists(p)) return Path.GetFullPath(p);
+            }
+            return null;
+        }
+
+        private void StartLogoRotation(bool enabled)
+        {
+            var host = this.FindName("LogoHost") as FrameworkElement;
+            var imgA = this.FindName("LogoImageA") as System.Windows.Controls.Image;
+            var imgB = this.FindName("LogoImageB") as System.Windows.Controls.Image;
+            if (host == null || imgA == null || imgB == null) return;
+
+            _logoTimer.Stop();
+            if (!enabled)
+            {
+                host.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            host.Visibility = Visibility.Visible;
+            BuildLogoList();
+            if (_logoFiles.Count == 0) return;
+
+            // Tampilkan pertama kali segera
+            _logoIndex = -1;
+            _logoUseA = true;
+            ShowNextLogo(immediate: true);
+
+            _logoTimer.Interval = TimeSpan.FromSeconds(LogoRotateSeconds);
+            _logoTimer.Tick -= LogoTimer_Tick;
+            _logoTimer.Tick += LogoTimer_Tick;
+            _logoTimer.Start();
+        }
+
+        private void LogoTimer_Tick(object? sender, EventArgs e) => ShowNextLogo(immediate: false);
+
+        private void ShowNextLogo(bool immediate)
+        {
+            var imgA = this.FindName("LogoImageA") as System.Windows.Controls.Image;
+            var imgB = this.FindName("LogoImageB") as System.Windows.Controls.Image;
+            if (imgA == null || imgB == null || _logoFiles.Count == 0) return;
+
+            _logoIndex = (_logoIndex + 1) % _logoFiles.Count;
+            var nextPath = _logoFiles[_logoIndex];
+
+            // Preload BitmapImage (OnLoad supaya file tidak terkunci)
+            var bi = new BitmapImage();
+            bi.BeginInit();
+            bi.CacheOption = BitmapCacheOption.OnLoad;
+            bi.UriSource = new Uri(nextPath, UriKind.Absolute);
+            bi.EndInit();
+            bi.Freeze();
+
+            var fadeIn = new DoubleAnimation { From = 0, To = 1, Duration = TimeSpan.FromMilliseconds(450), EasingFunction = new QuadraticEase() };
+            var fadeOut = new DoubleAnimation { From = 1, To = 0, Duration = TimeSpan.FromMilliseconds(450), EasingFunction = new QuadraticEase() };
+
+            if (_logoUseA)
+            {
+                imgB.Source = bi;
+                if (immediate)
+                {
+                    imgA.Opacity = 0;
+                    imgB.Opacity = 1;
+                }
+                else
+                {
+                    imgA.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+                    imgB.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+                }
+            }
+            else
+            {
+                imgA.Source = bi;
+                if (immediate)
+                {
+                    imgA.Opacity = 1;
+                    imgB.Opacity = 0;
+                }
+                else
+                {
+                    imgB.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+                    imgA.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+                }
+            }
+            _logoUseA = !_logoUseA;
         }
     }
 
