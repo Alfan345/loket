@@ -109,7 +109,7 @@
             </Grid.ColumnDefinitions>
 
             <!-- Video area -->
-            <Grid Grid.Column="0" Background="#0600A9" Margin="0,0,8,0">
+            <Grid Grid.Column="0" Background="{StaticResource BrandBlue}" Margin="0,0,8,0">
                 <MediaElement x:Name="VideoPlayer"
                               LoadedBehavior="Play"
                               UnloadedBehavior="Manual"

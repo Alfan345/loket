@@ -122,6 +122,9 @@
             Click="NextButton_Click"/>
     </Grid>
 
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button x:Name="SettingsButton" Content="Pengaturan" Width="110" Margin="8,0,0,0" Click="SettingsButton_Click"/>
+        </StackPanel>
 
         <TextBlock Grid.Row="3"
                    Text="ESC untuk keluar"

@@ -100,13 +100,20 @@ namespace DisplayApp.Wpf
                 var settings = await _http.GetFromJsonAsync<Dictionary<string, string>>("/api/settings") ?? new();
 
                 settings.TryGetValue("RunningText", out _runningText);
-
                 settings.TryGetValue("LogoPath", out _logoPath);
                 settings.TryGetValue("VideoPath", out _videoPath);
                 settings.TryGetValue("ShowLogo", out var showLogo);
                 settings.TryGetValue("ShowVideo", out var showVideo);
 
-                // Mulai/stop rotasi logo
+                // Update running text yang sedang berjalan
+                var runningTextBlock = this.FindName("RunningTextBlock") as TextBlock;
+                if (runningTextBlock != null)
+                {
+                    runningTextBlock.Text = _runningText ?? "";
+                    _marqueeX = ActualWidth; // reset start dari kanan
+                }
+
+                // Rotasi logo / video
                 StartLogoRotation(showLogo == "true");
 
                 var videoPlayer = this.FindName("VideoPlayer") as MediaElement;

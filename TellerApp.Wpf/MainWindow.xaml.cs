@@ -153,6 +153,17 @@ public partial class MainWindow : Window
             SetStatus($"Loket {_loket} dipilih");
         }
     }
+
+    private async void SettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new SettingsWindow(_http) { Owner = this };
+        var ok = dlg.ShowDialog() == true;
+        if (ok)
+            SetStatus("Pengaturan disimpan");
+        else
+            SetStatus("Pengaturan dibatalkan");
+        await Task.CompletedTask;
+    }
 }
 
 // Kelas untuk respon POST /api/queue/next/{counter}

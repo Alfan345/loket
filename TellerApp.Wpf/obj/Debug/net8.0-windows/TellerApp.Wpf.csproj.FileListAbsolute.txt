@@ -80,3 +80,5 @@ D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\refint\Teller
 D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\TellerApp.Wpf.pdb
 D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\TellerApp.Wpf.genruntimeconfig.cache
 D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\ref\TellerApp.Wpf.dll
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\SettingsWindow.baml
+D:\Kuliah\loket\QueueSystem\TellerApp.Wpf\obj\Debug\net8.0-windows\SettingsWindow.g.cs
