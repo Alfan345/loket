@@ -1,8 +1,9 @@
 <Window x:Class="DisplayApp.Wpf.MainWindow"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="Display" WindowState="Maximized" WindowStyle="None" ResizeMode="NoResize" Background="Black"
-    KeyDown="Window_KeyDown">
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vlc="clr-namespace:LibVLCSharp.WPF;assembly=LibVLCSharp.WPF"
+        Title="Display" WindowState="Maximized" WindowStyle="None" ResizeMode="NoResize" Background="Black"
+        KeyDown="Window_KeyDown">
 
     <Window.Resources>
         <Style x:Key="RecentCallItemStyle" TargetType="Border">
@@ -109,12 +110,13 @@
             </Grid.ColumnDefinitions>
 
             <!-- Video area -->
-            <Grid Grid.Column="0" Background="{StaticResource BrandBlue}" Margin="0,0,8,0">
+            <Grid Grid.Column="0" Background="{StaticResource BrandBlue}" Margin="0,0,8,0" x:Name="VideoHost">
                 <MediaElement x:Name="VideoPlayer"
-                              LoadedBehavior="Play"
+                              LoadedBehavior="Manual"
                               UnloadedBehavior="Manual"
                               Stretch="Uniform"
                               IsMuted="True" />
+                <vlc:VideoView x:Name="VlcView" Visibility="Collapsed"/>
             </Grid>
 
             <!-- Active Ticket Panel (kontainer biru gelap membulat) -->
@@ -156,10 +158,15 @@
         </Grid>
 
         <!-- FOOTER RUNNING TEXT -->
-        <Border Grid.Row="2" Background="#1A2340">
-            <Canvas>
-                <TextBlock x:Name="RunningTextBlock" FontSize="28" FontWeight="Bold" Foreground="#F7F7F7" Text="lorem ipsum dolor sit amet consectetur adipiscing elit"/>
-            </Canvas>
+        <Border Grid.Row="2" Background="#1A2340" Height="60">
+          <Canvas x:Name="RunningCanvas">
+            <TextBlock x:Name="RunningTextBlock"
+                       FontSize="28"
+                       FontWeight="Bold"
+                       Foreground="#F7F7F7"
+                       TextWrapping="NoWrap"
+                       Text=""/>
+          </Canvas>
         </Border>
     </Grid>
 </Window>

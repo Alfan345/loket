@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "jkuNcSfU40U=",
+  "success": true,
+  "projectFilePath": "D:\\Kuliah\\loket\\QueueSystem\\AdminApp.Wpf\\AdminApp.Wpf.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\ASUS\\.nuget\\packages\\serilog\\4.2.0\\serilog.4.2.0.nupkg.sha512",
+    "C:\\Users\\ASUS\\.nuget\\packages\\serilog.sinks.file\\7.0.0\\serilog.sinks.file.7.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

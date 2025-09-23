@@ -1,15 +1,15 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\QueueServer.API.csproj": {}
+    "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\QueueServer.Api.csproj": {}
   },
   "projects": {
-    "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\QueueServer.API.csproj": {
+    "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\QueueServer.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\QueueServer.API.csproj",
-        "projectName": "QueueServer.API",
-        "projectPath": "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\QueueServer.API.csproj",
+        "projectUniqueName": "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\QueueServer.Api.csproj",
+        "projectName": "QueueServer.Api",
+        "projectPath": "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\QueueServer.Api.csproj",
         "packagesPath": "C:\\Users\\ASUS\\.nuget\\packages\\",
         "outputPath": "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\obj\\",
         "projectStyle": "PackageReference",
@@ -67,15 +67,23 @@
             },
             "Serilog.AspNetCore": {
               "target": "Package",
-              "version": "[8.0.0, )"
+              "version": "[9.0.0, )"
+            },
+            "Serilog.Extensions.Hosting": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
+            "Serilog.Sinks.Console": {
+              "target": "Package",
+              "version": "[6.0.0, )"
             },
             "Serilog.Sinks.File": {
               "target": "Package",
-              "version": "[5.0.0, )"
+              "version": "[7.0.0, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
-              "version": "[6.5.0, )"
+              "version": "[9.0.4, )"
             }
           },
           "imports": [

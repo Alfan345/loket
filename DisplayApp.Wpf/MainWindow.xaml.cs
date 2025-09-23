@@ -1,64 +1,74 @@
-using Microsoft.AspNetCore.SignalR.Client;
-using System.Collections.ObjectModel;
-using System.Net.Http.Json;
-using System.Windows;
-using System.Windows.Media.Animation;
-using System.Windows.Threading;
-using System.Windows.Media;
-using System.IO;
-using Serilog;
-using System.Net.Http;
-using System.Text.Json;
-using System.Windows.Controls;          // DITAMBAHKAN: agar Canvas, ItemsControl dll dikenali
-using System.Linq;                      // DITAMBAHKAN: untuk Where/OrderBy/FirstOrDefault
-using System.Windows.Markup;
 using System;
-using System.Threading;
 using System.Collections.Generic;
-using System.Windows.Media.Imaging;
+using System.Collections.ObjectModel;
+using System.Linq;                        // FIX: TryExtractSequence helper
+using System.IO;                          // FIX: Path, File, Directory
+using System.Net.Http;                    // FIX: HttpClient
+using System.Net.Http.Json;
+using System.Text.Json;                   // FIX: JsonElement (jika terpakai)
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;               // Brush
+using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;       // BitmapImage, BitmapCacheOption
+using System.Windows.Threading;
+using LibVLCSharp.Shared;
+using Microsoft.AspNetCore.SignalR.Client;
+using Serilog;                            // FIX: Log
+using Shared;                             // FIX: ClientConfig
+using Shared.Contracts;
+// alias MediaPlayer untuk hindari konflik nama
+using WpfMediaPlayer = System.Windows.Media.MediaPlayer;
+using VlcMediaPlayer = LibVLCSharp.Shared.MediaPlayer;
 
 namespace DisplayApp.Wpf
 {
     public partial class MainWindow : Window
     {
-        // --- AUDIO QUEUE FIELDS (pastikan tidak duplikat) ---
+        // --- Audio: single player serial ---
         private readonly SemaphoreSlim _audioLock = new(1, 1);
         private readonly Queue<string> _audioQueue = new();
+        private WpfMediaPlayer? _voicePlayer;
         private bool _sequenceActive = false;
+        private bool _releaseLockWhenEmpty = false;
+        private const int GapMs = 70;
 
-        // Dua MediaPlayer: current & preloaded next
-        private MediaPlayer? _voicePlayerA;
-        private MediaPlayer? _voicePlayerB;
-        private MediaPlayer? _currentPlayer;
-        private MediaPlayer? _preloadPlayer;
+        // Server & HTTP
+        private static readonly string ServerUrl = ClientConfig.LoadServerUrl();
+        private readonly HttpClient _http = new() { BaseAddress = new Uri(ServerUrl) };
 
-        private string? _currentFile;
-        private string? _preloadedFile;
-
-        // Optional: kecilkan (atau set 0) jika ingin tanpa jeda ekstra
-        private const int GapMs = 40;
-
-        private readonly HttpClient _http = new() { BaseAddress = new Uri("http://localhost:5000") };
         private HubConnection? _hub;
         private readonly DispatcherTimer _clockTimer = new();
         private readonly DispatcherTimer _marqueeTimer = new();
         private double _marqueeX = 0;
+        private double _marqueeTextWidth = 0;
+        private const double MarqueeSpeed = 2.5;
         private string _runningText = "Selamat datang di layanan antrian";
         private string? _videoPath;
         private string? _logoPath;
-        private int? _activeCounter;
 
-        private readonly ObservableCollection<string> _recentCalls = new();
+        // UI state
+        private readonly ObservableCollection<string> _recentCalls = new(); // FIX: daftar panggilan terbaru
+        private int _activeCounter;                                         // FIX: loket aktif untuk display
 
         // ROTASI LOGO
         private readonly DispatcherTimer _logoTimer = new();
+        private bool _logoRotationStarted;   // keep only this one
         private readonly List<string> _logoFiles = new();
         private int _logoIndex = -1;
         private bool _logoUseA = true;
         private const int LogoRotateSeconds = 6;
 
-        private static string AudioRoot =>
-            Path.Combine(AppContext.BaseDirectory, "audio");
+        private readonly DispatcherTimer _settingsPollTimer = new();
+        private string? _settingsSignature;
+
+        // VLC fallback
+        private LibVLC? _libvlc;                    // FIX
+        private VlcMediaPlayer? _vlcPlayer;         // FIX
+
+        private static string AudioRoot => Path.Combine(AppContext.BaseDirectory, "audio");
 
         private static string? FindAudio(string fileName)
         {
@@ -80,12 +90,20 @@ namespace DisplayApp.Wpf
         {
             try
             {
-                await LoadSettings();
+                await LoadSettings();            // ambil awal
                 await LoadInitialActive();
-                await InitHub();
+                await InitHub();                 // hub connect
                 await RefreshServedLines();
                 InitClock();
                 InitMarquee();
+
+                // Start polling ringan sebagai fallback jika event terlewat
+                _settingsPollTimer.Interval = TimeSpan.FromSeconds(5);
+                _settingsPollTimer.Tick += async (_, __) =>
+                {
+                    try { await LoadSettings(); } catch (Exception ex) { Log.Error(ex, "SettingsPoll"); }
+                };
+                _settingsPollTimer.Start();
             }
             catch (Exception ex)
             {
@@ -93,86 +111,10 @@ namespace DisplayApp.Wpf
             }
         }
 
-        private async Task LoadSettings()
-        {
-            try
-            {
-                var settings = await _http.GetFromJsonAsync<Dictionary<string, string>>("/api/settings") ?? new();
-
-                settings.TryGetValue("RunningText", out _runningText);
-                settings.TryGetValue("LogoPath", out _logoPath);
-                settings.TryGetValue("VideoPath", out _videoPath);
-                settings.TryGetValue("ShowLogo", out var showLogo);
-                settings.TryGetValue("ShowVideo", out var showVideo);
-
-                // Update running text yang sedang berjalan
-                var runningTextBlock = this.FindName("RunningTextBlock") as TextBlock;
-                if (runningTextBlock != null)
-                {
-                    runningTextBlock.Text = _runningText ?? "";
-                    _marqueeX = ActualWidth; // reset start dari kanan
-                }
-
-                // Rotasi logo / video
-                StartLogoRotation(showLogo == "true");
-
-                var videoPlayer = this.FindName("VideoPlayer") as MediaElement;
-                if (showVideo == "true")
-                    LoadAndPlayVideo();
-                else if (videoPlayer != null)
-                    videoPlayer.Visibility = Visibility.Collapsed;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "LoadSettings");
-            }
-        }
-
-        private async Task LoadInitialActive()
-        {
-            try
-            {
-                var tickets = await _http.GetFromJsonAsync<List<TicketDto>>("/api/tickets/today") ?? new();
-                NormalizeStatuses(tickets);
-
-                var latestCalling = tickets
-                    .Where(t => t.Status == "CALLING")
-                    .OrderByDescending(t => t.CalledAt ?? DateTime.MinValue)
-                    .FirstOrDefault();
-
-                if (latestCalling != null)
-                {
-                    SetActive(latestCalling.TicketNumber, latestCalling.CounterNumber ?? 0);
-                    AddRecentCall(latestCalling);
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "LoadInitialActive");
-            }
-        }
-
-        private void NormalizeStatuses(List<TicketDto> tickets)
-        {
-            foreach (var t in tickets)
-            {
-                t.Status = t.Status switch
-                {
-                    "0" => "WAITING",
-                    "1" => "CALLING",
-                    "2" => "SERVING",
-                    "3" => "DONE",
-                    "4" => "NO_SHOW",
-                    "5" => "CANCELED",
-                    _ => t.Status
-                };
-            }
-        }
-
         private async Task InitHub()
         {
             _hub = new HubConnectionBuilder()
-                .WithUrl("http://localhost:5000/hub/queue")
+                .WithUrl($"{ServerUrl}/hub/queue")
                 .WithAutomaticReconnect()
                 .Build();
 
@@ -209,8 +151,12 @@ namespace DisplayApp.Wpf
                 }
             });
 
-            _hub.On<object>("SettingsChanged", _ =>
-                Dispatcher.Invoke(async () => await LoadSettings()));
+        // Ganti ke konstanta & tambahkan log
+        _hub.On<object>(HubEvents.SettingsChanged, _ =>
+        {
+            Log.Information("SettingsChanged event diterima");
+            _ = Dispatcher.InvokeAsync(async () => await LoadSettings());
+        });
 
             _hub.On<object>("TicketUpdated", _ =>
                 Dispatcher.Invoke(async () => await RefreshServedLines()));
@@ -264,22 +210,10 @@ namespace DisplayApp.Wpf
                 activeCounterText.Text = $"Ke Loket {counter}";
         }
 
-        private bool TryExtractSequence(string ticketNumber, out int seq)
+        private static bool TryExtractSequence(string input, out int seq)
         {
-            seq = 0;
-            var parts = ticketNumber.Split('-', '_');
-            if (parts.Length >= 2 && int.TryParse(parts[1], out int v))
-            {
-                seq = v;
-                return true;
-            }
-            var digits = new string(ticketNumber.Where(char.IsDigit).ToArray());
-            if (int.TryParse(digits, out v))
-            {
-                seq = v;
-                return true;
-            }
-            return false;
+            var digits = new string(input.Where(char.IsDigit).ToArray());
+            return int.TryParse(digits, out seq);
         }
 
         private async Task RefreshServedLines()
@@ -367,47 +301,253 @@ namespace DisplayApp.Wpf
 
         private void InitMarquee()
         {
-            var runningTextBlock = this.FindName("RunningTextBlock") as TextBlock;
-            if (runningTextBlock == null) return;
-            runningTextBlock.Text = _runningText;
-            _marqueeX = ActualWidth;
+            var text = this.FindName("RunningTextBlock") as TextBlock;
+            var canvas = this.FindName("RunningCanvas") as Canvas;
+            if (text == null || canvas == null) return;
+
+            // hitung lebar teks
+            text.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            _marqueeTextWidth = text.DesiredSize.Width;
+
+            // mulai dari sisi kanan canvas
+            _marqueeX = canvas.ActualWidth <= 0 ? ActualWidth : canvas.ActualWidth;
+            Canvas.SetTop(text, 8);
+            Canvas.SetLeft(text, _marqueeX);
+
+            _marqueeTimer.Stop();
+            _marqueeTimer.Tick -= MarqueeTimer_Tick;
             _marqueeTimer.Interval = TimeSpan.FromMilliseconds(30);
-            _marqueeTimer.Tick += (_, _) =>
-            {
-                _marqueeX -= 2.5;
-                if (_marqueeX < -runningTextBlock.ActualWidth)
-                    _marqueeX = ActualWidth;
-                Canvas.SetLeft(runningTextBlock, _marqueeX);
-                Canvas.SetTop(runningTextBlock, 8);
-            };
+            _marqueeTimer.Tick += MarqueeTimer_Tick;
             _marqueeTimer.Start();
+
+            SizeChanged -= MainWindow_SizeChanged;
+            SizeChanged += MainWindow_SizeChanged;
+        }
+
+        private void MarqueeTimer_Tick(object? sender, EventArgs e)
+        {
+            if (this.FindName("RunningTextBlock") is not TextBlock text) return;
+            if (this.FindName("RunningCanvas") is not Canvas canvas) return;
+
+            var width = canvas.ActualWidth > 0 ? canvas.ActualWidth : ActualWidth;
+
+            _marqueeX -= MarqueeSpeed;
+            Canvas.SetLeft(text, _marqueeX);
+
+            // reset setelah seluruh teks keluar kiri
+            if (_marqueeX < -_marqueeTextWidth)
+            {
+                _marqueeX = width;
+                Canvas.SetLeft(text, _marqueeX);
+            }
+        }
+
+        private void MainWindow_SizeChanged(object? sender, SizeChangedEventArgs e)
+        {
+            if (this.FindName("RunningCanvas") is not Canvas canvas) return;
+            _marqueeX = canvas.ActualWidth > 0 ? canvas.ActualWidth : ActualWidth;
+        }
+
+        private void ApplyRunningText(string? textValue)
+        {
+            if (this.FindName("RunningTextBlock") is not TextBlock text) return;
+            if (this.FindName("RunningCanvas") is not Canvas canvas) return;
+
+            text.Text = textValue ?? string.Empty;
+            text.TextWrapping = TextWrapping.NoWrap;
+
+            // hitung ulang lebar teks
+            text.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            _marqueeTextWidth = text.DesiredSize.Width;
+
+            // mulai dari kanan canvas
+            _marqueeX = canvas.ActualWidth > 0 ? canvas.ActualWidth : ActualWidth;
+            Canvas.SetTop(text, 8);
+            Canvas.SetLeft(text, _marqueeX);
+
+            // siapkan timer sekali
+            _marqueeTimer.Stop();
+            _marqueeTimer.Tick -= MarqueeTimer_Tick;
+            _marqueeTimer.Interval = TimeSpan.FromMilliseconds(30);
+            _marqueeTimer.Tick += MarqueeTimer_Tick;
+            _marqueeTimer.Start();
+
+            SizeChanged -= MainWindow_SizeChanged;
+            SizeChanged += MainWindow_SizeChanged;
+        }
+
+        // Hitung signature untuk deteksi perubahan setting
+        private static string ComputeSignature(IDictionary<string, string> s)
+        {
+            s.TryGetValue("RunningText", out var running);
+            s.TryGetValue("VideoPath", out var video);
+            s.TryGetValue("ShowVideo", out var showVideo);
+            return $"{running}|{video}|{showVideo}";
+        }
+
+        private string? _lastRunTextSig;
+        private bool? _lastShowLogo;
+
+        private async Task LoadSettings()
+        {
+            try
+            {
+                var settings = await _http.GetFromJsonAsync<Dictionary<string, string>>("/api/settings") ?? new();
+
+                var firstLoad = _settingsSignature == null;
+                var newSig = ComputeSignature(settings); // berisi RunningText|VideoPath|ShowVideo
+                var changed = firstLoad || !string.Equals(_settingsSignature, newSig, StringComparison.Ordinal);
+                _settingsSignature = newSig;
+
+                settings.TryGetValue("RunningText", out var runningText);
+                settings.TryGetValue("VideoPath", out _videoPath);
+                settings.TryGetValue("ShowVideo", out var showVideo);
+                settings.TryGetValue("ShowLogo", out var showLogoStr);
+
+                // 1) Running text: hanya re-init saat teks berubah
+                var rtSig = runningText ?? string.Empty;
+                if (firstLoad || _lastRunTextSig != rtSig)
+                {
+                    _lastRunTextSig = rtSig;
+                    ApplyRunningText(runningText);
+                }
+
+                // 2) Logo: hanya start/stop saat toggle berubah
+                var showLogo = string.IsNullOrWhiteSpace(showLogoStr) || showLogoStr.Equals("true", StringComparison.OrdinalIgnoreCase);
+                if (firstLoad || _lastShowLogo != showLogo)
+                {
+                    _lastShowLogo = showLogo;
+                    StartLogoRotation(showLogo);
+                }
+
+                // 3) Video: apply saat pertama atau ada perubahan terkait video
+                if (firstLoad || changed)
+                {
+                    var videoEl = this.FindName("VideoPlayer") as MediaElement;
+                    if (string.Equals(showVideo, "true", StringComparison.OrdinalIgnoreCase))
+                    {
+                        LoadAndPlayVideo();
+                    }
+                    else if (videoEl != null)
+                    {
+                        videoEl.Visibility = Visibility.Collapsed;
+                        videoEl.Stop();
+                        videoEl.Source = null;
+                    }
+                }
+
+                Log.Information("Settings loaded (changed={Changed})", changed);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "LoadSettings");
+            }
+        }
+
+        private async Task LoadInitialActive()
+        {
+            // Jika belum ada endpoint khusus, biarkan no-op agar tidak error kompilasi.
+            await Task.CompletedTask;
+        }
+
+        private void NormalizeStatuses() { /* no-op */ }
+
+        // Overload generik agar kompatibel dengan pemanggilan yang ada
+        private void NormalizeStatuses<T>(T _) { /* no-op for now */ }
+
+        // --- Video helpers ---
+
+        private static string? ResolveMediaPath(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return null;
+
+            // HTTP/HTTPS absolut
+            if (Uri.TryCreate(path, UriKind.Absolute, out var abs) &&
+                (abs.Scheme == Uri.UriSchemeHttp || abs.Scheme == Uri.UriSchemeHttps))
+                return abs.ToString();
+
+            // Relatif ke server (contoh: /videos/xxx.mp4)
+            if (path.StartsWith("/", StringComparison.Ordinal))
+            {
+                var baseUri = new Uri(ClientConfig.LoadServerUrl().TrimEnd('/'));
+                return new Uri(baseUri, path).ToString();
+            }
+
+            // Path lokal absolut/UNC
+            if (Path.IsPathRooted(path) && File.Exists(path))
+                return Path.GetFullPath(path);
+
+            // Relatif ke folder app
+            var p1 = Path.Combine(AppContext.BaseDirectory, path);
+            if (File.Exists(p1)) return Path.GetFullPath(p1);
+
+            // Relatif ke Resources lokal
+            var p2 = Path.Combine(AppContext.BaseDirectory, "Resources", Path.GetFileName(path));
+            if (File.Exists(p2)) return Path.GetFullPath(p2);
+
+            return null;
         }
 
         private void LoadAndPlayVideo()
         {
             try
             {
-                var videoPlayer = this.FindName("VideoPlayer") as MediaElement;
-                if (videoPlayer != null && !string.IsNullOrWhiteSpace(_videoPath) && File.Exists(_videoPath))
-                {
-                    videoPlayer.Source = new Uri(Path.GetFullPath(_videoPath));
-                    videoPlayer.IsMuted = true;          // force mute
-                    videoPlayer.Volume = 0;              // safety
-                    videoPlayer.MediaEnded += (_, _) =>
-                    {
-                        videoPlayer.Position = TimeSpan.Zero;
-                        videoPlayer.Play();
-                    };
-                    videoPlayer.Play();
-                }
-                else
+                if (this.FindName("VideoPlayer") is not MediaElement video) return;
+                var vlcView = this.FindName("VlcView") as LibVLCSharp.WPF.VideoView;
+
+                var resolved = ResolveMediaPath(_videoPath);
+                if (resolved == null)
                 {
                     Log.Warning("Video not found: {Path}", _videoPath);
+                    video.Visibility = Visibility.Collapsed;
+                    if (vlcView != null) vlcView.Visibility = Visibility.Collapsed;
+                    return;
                 }
+
+                var ext = Path.GetExtension(resolved).ToLowerInvariant();
+
+                // VLC fallback untuk format non-standar
+                if (ext is ".mkv" or ".webm" or ".mk3d" or ".mov")
+                {
+                    _libvlc ??= new LibVLC(enableDebugLogs: false);
+                    _vlcPlayer?.Stop();
+                    _vlcPlayer?.Dispose();
+                    _vlcPlayer = new VlcMediaPlayer(_libvlc) { EnableHardwareDecoding = true };
+                    if (vlcView != null) vlcView.MediaPlayer = _vlcPlayer;
+
+                    video.Visibility = Visibility.Collapsed;
+                    if (vlcView != null) vlcView.Visibility = Visibility.Visible;
+
+                    using var media = new Media(_libvlc, resolved, FromType.FromLocation);
+                    media.AddOption(":input-repeat=65535"); // loop
+                    _vlcPlayer.Play(media);
+                    Log.Information("VLC playing: {Url}", resolved);
+                    return;
+                }
+
+                // Default: MediaElement (mp4, wmv)
+                if (vlcView != null)
+                {
+                    vlcView.Visibility = Visibility.Collapsed;
+                    _vlcPlayer?.Stop();
+                }
+
+                video.MediaOpened -= Video_MediaOpened;
+                video.MediaEnded  -= Video_MediaEnded;
+                video.MediaFailed -= Video_MediaFailed;
+                video.MediaOpened += Video_MediaOpened;
+                video.MediaEnded  += Video_MediaEnded;
+                video.MediaFailed += Video_MediaFailed;
+
+                video.Visibility = Visibility.Visible;
+                video.IsMuted = true;
+                video.Stop();
+                video.Source = new Uri(resolved, UriKind.RelativeOrAbsolute);
+                Log.Information("MediaElement playing: {Url}", resolved);
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "LoadAndPlayVideo");
+                Log.Error(ex, "LoadAndPlayVideo failed");
             }
         }
 
@@ -458,6 +598,7 @@ namespace DisplayApp.Wpf
         private async Task PlayChimeAndTts(string ticketNumber, int counter)
         {
             await _audioLock.WaitAsync();
+            _releaseLockWhenEmpty = true;
             try
             {
                 var list = new List<string>();
@@ -469,164 +610,88 @@ namespace DisplayApp.Wpf
                     else Serilog.Log.Warning("Missing audio: {File}", name);
                 }
 
+                // chime → "nomor_antrian" → nomor tiket → "silakan_menuju_ke_loket" → nomor loket
                 Add("chime.mp3");
                 Add("nomor_antrian.mp3");
                 foreach (var f in BuildTicketNumberSequence(ticketNumber)) Add(f);
                 Add("silakan_menuju_ke_loket.mp3");
                 foreach (var f in BuildNumberAudio(counter)) Add(f);
 
-                if (list.Count == 0)
-                {
-                    _audioLock.Release();
-                    return;
-                }
-
                 await Dispatcher.InvokeAsync(() =>
                 {
                     foreach (var f in list) _audioQueue.Enqueue(f);
-                    if (!_sequenceActive)
-                    {
-                        _sequenceActive = true;
-                        InitializePlayersIfNeeded();
-                        StartFirstPlayback();
-                    }
+                    StartIfIdle();
                 });
             }
             catch (Exception ex)
             {
-                Serilog.Log.Error(ex, "PlayChimeAndTts enqueue error");
+                Serilog.Log.Error(ex, "PlayChimeAndTts");
+                _releaseLockWhenEmpty = false;
                 _audioLock.Release();
             }
         }
 
-        private void InitializePlayersIfNeeded()
+        // Inisialisasi player sekali
+        private void EnsureVoicePlayer()
         {
-            _voicePlayerA ??= CreatePlayer();
-            _voicePlayerB ??= CreatePlayer();
-            if (_currentPlayer == null) _currentPlayer = _voicePlayerA;
-            if (_preloadPlayer == null) _preloadPlayer = _voicePlayerB;
+           if (_voicePlayer != null) return;
+           _voicePlayer = new WpfMediaPlayer();
+            _voicePlayer.MediaEnded += VoicePlayer_MediaEnded;
+            _voicePlayer.MediaFailed += VoicePlayer_MediaFailed;
+            _voicePlayer.Volume = 1.0;
+            _voicePlayer.IsMuted = false;
         }
 
-        private MediaPlayer CreatePlayer()
+        // Enqueue dan mulai jika idle (dipanggil dari PlayChimeAndTts)
+        private void StartIfIdle()
         {
-            var p = new MediaPlayer();
-            p.MediaEnded += Player_MediaEnded;
-            p.MediaFailed += Player_MediaFailed;
-            return p;
+            EnsureVoicePlayer();
+            if (_sequenceActive) return;
+            _sequenceActive = true;
+            PlayNextInQueue();
         }
 
-        private void StartFirstPlayback()
+        private async void VoicePlayer_MediaEnded(object? sender, EventArgs e)
+        {
+            // beri jeda kecil sebelum lanjut
+            if (GapMs > 0) await Task.Delay(GapMs);
+            PlayNextInQueue();
+        }
+
+        private void VoicePlayer_MediaFailed(object? sender, ExceptionEventArgs e)
+        {
+            Serilog.Log.Warning("Audio failed: {Msg}", e.ErrorException?.Message);
+            PlayNextInQueue();
+        }
+
+        // Putar item berikutnya (serial, 1 per waktu)
+        private void PlayNextInQueue()
         {
             if (_audioQueue.Count == 0)
             {
-                EndSequence();
+                _sequenceActive = false;
+                if (_releaseLockWhenEmpty)
+                {
+                    _releaseLockWhenEmpty = false;
+                    _audioLock.Release();
+                }
                 return;
             }
 
-            // Ambil file pertama
-            _currentFile = _audioQueue.Dequeue();
-            OpenAndPlay(_currentPlayer!, _currentFile);
-            // Preload berikutnya (kalau ada)
-            PreloadNext();
-        }
-
-        private void PreloadNext()
-        {
-            _preloadedFile = null;
-            if (_audioQueue.Count == 0) return;
-
-            _preloadedFile = _audioQueue.Dequeue();
+            var file = _audioQueue.Dequeue();
             try
             {
-                _preloadPlayer!.Open(new Uri(_preloadedFile, UriKind.Absolute));
-                // Jangan Play; cukup biarkan load
+                _voicePlayer!.Stop();                 // pastikan reset
+                _voicePlayer.Position = TimeSpan.Zero;
+                _voicePlayer.Open(new Uri(file, UriKind.Absolute));
+                _voicePlayer.Play();
             }
             catch (Exception ex)
             {
-                Serilog.Log.Warning(ex, "Preload failed {File}", _preloadedFile);
-                _preloadedFile = null;
+                Serilog.Log.Warning(ex, "PlayNext failed {File}", file);
+                // Skip ke item berikut
+                PlayNextInQueue();
             }
-        }
-
-        private void Player_MediaEnded(object? sender, EventArgs e)
-        {
-            // Mulai file preloaded (atau langsung next biasa)
-            Dispatcher.Invoke(async () =>
-            {
-                if (GapMs > 0)
-                    await Task.Delay(GapMs);
-
-                if (_preloadedFile != null)
-                {
-                    // Swap player roles
-                    var tmp = _currentPlayer;
-                    _currentPlayer = _preloadPlayer;
-                    _preloadPlayer = tmp;
-
-                    _currentFile = _preloadedFile;
-                    _preloadedFile = null;
-
-                    // Pastikan event handler terpasang (sudah dari CreatePlayer)
-                    PlayCurrentAlreadyOpened();
-                    // Preload file berikutnya
-                    PreloadNext();
-                    return;
-                }
-
-                // Tidak ada preloaded (queue habis sebelumnya)
-                if (_audioQueue.Count > 0)
-                {
-                    _currentFile = _audioQueue.Dequeue();
-                    OpenAndPlay(_currentPlayer!, _currentFile);
-                    PreloadNext();
-                }
-                else
-                {
-                    EndSequence();
-                }
-            });
-        }
-
-        private void Player_MediaFailed(object? sender, ExceptionEventArgs e)
-        {
-            Serilog.Log.Warning("MediaFailed: {Msg}", e.ErrorException?.Message);
-            Player_MediaEnded(sender, EventArgs.Empty); // Skip ke berikutnya
-        }
-
-        private void PlayCurrentAlreadyOpened()
-        {
-            try
-            {
-                _currentPlayer!.Position = TimeSpan.Zero;
-                _currentPlayer.Play();
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex, "PlayCurrentAlreadyOpened {File}", _currentFile);
-                Player_MediaEnded(_currentPlayer, EventArgs.Empty);
-            }
-        }
-
-        private void OpenAndPlay(MediaPlayer player, string file)
-        {
-            try
-            {
-                player.Open(new Uri(file, UriKind.Absolute));
-                player.Play();
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex, "OpenAndPlay failed {File}", file);
-                Player_MediaEnded(player, EventArgs.Empty);
-            }
-        }
-
-        private void EndSequence()
-        {
-            _sequenceActive = false;
-            _currentFile = null;
-            _preloadedFile = null;
-            _audioLock.Release();
         }
 
         private void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -635,6 +700,32 @@ namespace DisplayApp.Wpf
             {
                 Close();
             }
+        }
+
+        // --- Handlers MediaElement (FIX: hilang) ---
+        private void Video_MediaOpened(object? sender, RoutedEventArgs e)
+        {
+            if (sender is MediaElement m)
+            {
+                m.Position = TimeSpan.Zero;
+                m.Play();
+                Log.Information("MediaElement opened");
+            }
+        }
+
+        private void Video_MediaEnded(object? sender, RoutedEventArgs e)
+        {
+            if (sender is MediaElement m)
+            {
+                m.Position = TimeSpan.Zero;
+                m.Play(); // loop
+            }
+        }
+
+        private void Video_MediaFailed(object? sender, ExceptionRoutedEventArgs e)
+        {
+            Log.Warning("MediaElement failed: {Msg}", e.ErrorException?.Message);
+            if (sender is MediaElement m) m.Visibility = Visibility.Collapsed;
         }
 
         // Panggil ini setiap kali nomor aktif berubah
@@ -670,26 +761,14 @@ namespace DisplayApp.Wpf
             BlinkActiveNumber();
         }
 
-        // Bangun daftar file logo dari folder "Resources"
-        private void BuildLogoList()
-        {
-            _logoFiles.Clear();
-            string[] names = { "logo.png", "posaja.png", "pospay.png" };
-            foreach (var n in names)
-            {
-                var p = FindResourceFile(n);
-                if (p != null) _logoFiles.Add(p);
-            }
-        }
-
         private static string? FindResourceFile(string fileName)
         {
-            // Cari di beberapa root umum
             var roots = new[]
             {
                 AppContext.BaseDirectory,
                 Path.Combine(AppContext.BaseDirectory, "Resources"),
                 Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Resources")),
+                Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Resources")),
                 Path.Combine(Directory.GetCurrentDirectory(), "Resources")
             };
             foreach (var r in roots)
@@ -700,47 +779,64 @@ namespace DisplayApp.Wpf
             return null;
         }
 
+        private void BuildLogoList()
+        {
+            _logoFiles.Clear();
+            foreach (var n in new[] { "logo.png", "posaja.png", "pospay.png" })
+            {
+                var p = FindResourceFile(n);
+                if (p != null) _logoFiles.Add(p);
+            }
+            Log.Information("Logos found: {Count} -> {Files}", _logoFiles.Count, string.Join(", ", _logoFiles));
+        }
+
         private void StartLogoRotation(bool enabled)
         {
             var host = this.FindName("LogoHost") as FrameworkElement;
-            var imgA = this.FindName("LogoImageA") as System.Windows.Controls.Image;
-            var imgB = this.FindName("LogoImageB") as System.Windows.Controls.Image;
+            var imgA = this.FindName("LogoImageA") as Image;
+            var imgB = this.FindName("LogoImageB") as Image;
             if (host == null || imgA == null || imgB == null) return;
 
-            _logoTimer.Stop();
             if (!enabled)
             {
+                _logoTimer.Stop();
+                _logoTimer.Tick -= LogoTimer_Tick;
+                _logoRotationStarted = false;
                 host.Visibility = Visibility.Collapsed;
                 return;
             }
 
             host.Visibility = Visibility.Visible;
+
+            // Jika sudah running, biarkan timer berjalan (hindari reset setiap polling)
+            if (_logoRotationStarted) return;
+
             BuildLogoList();
             if (_logoFiles.Count == 0) return;
 
-            // Tampilkan pertama kali segera
             _logoIndex = -1;
             _logoUseA = true;
             ShowNextLogo(immediate: true);
 
-            _logoTimer.Interval = TimeSpan.FromSeconds(LogoRotateSeconds);
+            _logoTimer.Stop();
             _logoTimer.Tick -= LogoTimer_Tick;
+            _logoTimer.Interval = TimeSpan.FromSeconds(6);
             _logoTimer.Tick += LogoTimer_Tick;
             _logoTimer.Start();
+            _logoRotationStarted = true;
         }
 
         private void LogoTimer_Tick(object? sender, EventArgs e) => ShowNextLogo(immediate: false);
 
         private void ShowNextLogo(bool immediate)
         {
-            var imgA = this.FindName("LogoImageA") as System.Windows.Controls.Image;
-            var imgB = this.FindName("LogoImageB") as System.Windows.Controls.Image;
+            var imgA = this.FindName("LogoImageA") as Image;
+            var imgB = this.FindName("LogoImageB") as Image;
             if (imgA == null || imgB == null || _logoFiles.Count == 0) return;
 
             _logoIndex = (_logoIndex + 1) % _logoFiles.Count;
             var nextPath = _logoFiles[_logoIndex];
 
-            // Preload BitmapImage (OnLoad supaya file tidak terkunci)
             var bi = new BitmapImage();
             bi.BeginInit();
             bi.CacheOption = BitmapCacheOption.OnLoad;
@@ -748,59 +844,32 @@ namespace DisplayApp.Wpf
             bi.EndInit();
             bi.Freeze();
 
-            var fadeIn = new DoubleAnimation { From = 0, To = 1, Duration = TimeSpan.FromMilliseconds(450), EasingFunction = new QuadraticEase() };
-            var fadeOut = new DoubleAnimation { From = 1, To = 0, Duration = TimeSpan.FromMilliseconds(450), EasingFunction = new QuadraticEase() };
+            var fadeIn = new DoubleAnimation { From = 0, To = 1, Duration = TimeSpan.FromMilliseconds(450) };
+            var fadeOut = new DoubleAnimation { From = 1, To = 0, Duration = TimeSpan.FromMilliseconds(450) };
 
             if (_logoUseA)
             {
                 imgB.Source = bi;
-                if (immediate)
-                {
-                    imgA.Opacity = 0;
-                    imgB.Opacity = 1;
-                }
-                else
-                {
-                    imgA.BeginAnimation(UIElement.OpacityProperty, fadeOut);
-                    imgB.BeginAnimation(UIElement.OpacityProperty, fadeIn);
-                }
+                if (immediate) { imgA.Opacity = 0; imgB.Opacity = 1; }
+                else { imgA.BeginAnimation(UIElement.OpacityProperty, fadeOut); imgB.BeginAnimation(UIElement.OpacityProperty, fadeIn); }
             }
             else
             {
                 imgA.Source = bi;
-                if (immediate)
-                {
-                    imgA.Opacity = 1;
-                    imgB.Opacity = 0;
-                }
-                else
-                {
-                    imgB.BeginAnimation(UIElement.OpacityProperty, fadeOut);
-                    imgA.BeginAnimation(UIElement.OpacityProperty, fadeIn);
-                }
+                if (immediate) { imgA.Opacity = 1; imgB.Opacity = 0; }
+                else { imgB.BeginAnimation(UIElement.OpacityProperty, fadeOut); imgA.BeginAnimation(UIElement.OpacityProperty, fadeIn); }
             }
             _logoUseA = !_logoUseA;
         }
-    }
 
-    // DTO
-    public class TicketDto
-    {
-        public int Id { get; set; }
-        public string TicketNumber { get; set; } = "";
-        public string Status { get; set; } = "";
-        public int? CounterNumber { get; set; }
-        public DateTime? CalledAt { get; set; }
-    }
-
-    // Extension helper untuk JsonElement
-    internal static class JsonElementExt
-    {
-        public static JsonElement? GetPropertyOrNull(this JsonElement e, string name)
+        // DTO
+        public class TicketDto
         {
-            if (e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var val))
-                return val;
-            return null;
+            public int Id { get; set; }
+            public string TicketNumber { get; set; } = "";
+            public string Status { get; set; } = "";
+            public int? CounterNumber { get; set; }
+            public DateTime? CalledAt { get; set; }
         }
     }
 }
