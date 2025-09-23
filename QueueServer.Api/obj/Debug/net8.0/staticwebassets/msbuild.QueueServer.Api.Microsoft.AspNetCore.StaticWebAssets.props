@@ -1,0 +1,228 @@
+﻿<Project>
+  <ItemGroup>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922063942_【STAR PURIPURI】 『限界 Lonely☆』 4K EBIDAN THE LIVE 2025 ver.mp4))">
+      <SourceType>Package</SourceType>
+      <SourceId>QueueServer.Api</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/QueueServer.Api</BasePath>
+      <RelativePath>videos/20250922063942_【STAR PURIPURI】 『限界 Lonely☆』 4K EBIDAN THE LIVE 2025 ver.mp4</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922063942_【STAR PURIPURI】 『限界 Lonely☆』 4K EBIDAN THE LIVE 2025 ver.mp4))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922064018_【STAR PURIPURI】 『限界 Lonely☆』 4K EBIDAN THE LIVE 2025 ver.mp4))">
+      <SourceType>Package</SourceType>
+      <SourceId>QueueServer.Api</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/QueueServer.Api</BasePath>
+      <RelativePath>videos/20250922064018_【STAR PURIPURI】 『限界 Lonely☆』 4K EBIDAN THE LIVE 2025 ver.mp4</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922064018_【STAR PURIPURI】 『限界 Lonely☆』 4K EBIDAN THE LIVE 2025 ver.mp4))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922071048_『Resplandor』 全三日公演.mp4))">
+      <SourceType>Package</SourceType>
+      <SourceId>QueueServer.Api</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/QueueServer.Api</BasePath>
+      <RelativePath>videos/20250922071048_『Resplandor』 全三日公演.mp4</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922071048_『Resplandor』 全三日公演.mp4))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922073306_「Everlasting Luv」 from 2015.5.20 BREAKERZ FREE LIVE   #BREAKERZ #LIVE #名探偵コナン #OP.mp4))">
+      <SourceType>Package</SourceType>
+      <SourceId>QueueServer.Api</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/QueueServer.Api</BasePath>
+      <RelativePath>videos/20250922073306_「Everlasting Luv」 from 2015.5.20 BREAKERZ FREE LIVE   #BREAKERZ #LIVE #名探偵コナン #OP.mp4</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922073306_「Everlasting Luv」 from 2015.5.20 BREAKERZ FREE LIVE   #BREAKERZ #LIVE #名探偵コナン #OP.mp4))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922073347_M!LK - アオノオト(Official Music Video).mp4))">
+      <SourceType>Package</SourceType>
+      <SourceId>QueueServer.Api</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/QueueServer.Api</BasePath>
+      <RelativePath>videos/20250922073347_M!LK - アオノオト(Official Music Video).mp4</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922073347_M!LK - アオノオト(Official Music Video).mp4))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922073519_DMZ_v2 for Juuryoku Sympathy on X- 'AKB48 66th Single First Performance AKB48 - Oh my Pumpkin #AKB48 #𝐀𝐊𝐁𝟒𝟖_𝟐𝟎𝐭𝐡𝐘𝐞𝐚𝐫 #Oh_my_pumpkin https---t.co-XwE4OoflYx' - X.mp4))">
+      <SourceType>Package</SourceType>
+      <SourceId>QueueServer.Api</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/QueueServer.Api</BasePath>
+      <RelativePath>videos/20250922073519_DMZ_v2 for Juuryoku Sympathy on X- 'AKB48 66th Single First Performance AKB48 - Oh my Pumpkin #AKB48 #𝐀𝐊𝐁𝟒𝟖_𝟐𝟎𝐭𝐡𝐘𝐞𝐚𝐫 #Oh_my_pumpkin https---t.co-XwE4OoflYx' - X.mp4</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922073519_DMZ_v2 for Juuryoku Sympathy on X- 'AKB48 66th Single First Performance AKB48 - Oh my Pumpkin #AKB48 #𝐀𝐊𝐁𝟒𝟖_𝟐𝟎𝐭𝐡𝐘𝐞𝐚𝐫 #Oh_my_pumpkin https---t.co-XwE4OoflYx' - X.mp4))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922073612_【ROUTE-8】We are ICEx_哔哩哔哩_bilibili.mp4))">
+      <SourceType>Package</SourceType>
+      <SourceId>QueueServer.Api</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/QueueServer.Api</BasePath>
+      <RelativePath>videos/20250922073612_【ROUTE-8】We are ICEx_哔哩哔哩_bilibili.mp4</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922073612_【ROUTE-8】We are ICEx_哔哩哔哩_bilibili.mp4))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922073653_Day2_哔哩哔哩_bilibili.mp4))">
+      <SourceType>Package</SourceType>
+      <SourceId>QueueServer.Api</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/QueueServer.Api</BasePath>
+      <RelativePath>videos/20250922073653_Day2_哔哩哔哩_bilibili.mp4</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922073653_Day2_哔哩哔哩_bilibili.mp4))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922073929_y2mate.com - MV full 好きなんだ  AKB48公式_720p.mp4))">
+      <SourceType>Package</SourceType>
+      <SourceId>QueueServer.Api</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/QueueServer.Api</BasePath>
+      <RelativePath>videos/20250922073929_y2mate.com - MV full 好きなんだ  AKB48公式_720p.mp4</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922073929_y2mate.com - MV full 好きなんだ  AKB48公式_720p.mp4))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922074044_2025-07-08 01-56-37.mkv))">
+      <SourceType>Package</SourceType>
+      <SourceId>QueueServer.Api</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/QueueServer.Api</BasePath>
+      <RelativePath>videos/20250922074044_2025-07-08 01-56-37.mkv</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922074044_2025-07-08 01-56-37.mkv))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922083018_2025-07-08 01-56-37.mkv))">
+      <SourceType>Package</SourceType>
+      <SourceId>QueueServer.Api</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/QueueServer.Api</BasePath>
+      <RelativePath>videos/20250922083018_2025-07-08 01-56-37.mkv</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922083018_2025-07-08 01-56-37.mkv))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922083037_2025-07-08 01-56-37.mkv))">
+      <SourceType>Package</SourceType>
+      <SourceId>QueueServer.Api</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/QueueServer.Api</BasePath>
+      <RelativePath>videos/20250922083037_2025-07-08 01-56-37.mkv</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922083037_2025-07-08 01-56-37.mkv))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922083047_2025-07-08 01-56-37.mkv))">
+      <SourceType>Package</SourceType>
+      <SourceId>QueueServer.Api</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/QueueServer.Api</BasePath>
+      <RelativePath>videos/20250922083047_2025-07-08 01-56-37.mkv</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922083047_2025-07-08 01-56-37.mkv))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922083104_『Resplandor』 全三日公演.mp4))">
+      <SourceType>Package</SourceType>
+      <SourceId>QueueServer.Api</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/QueueServer.Api</BasePath>
+      <RelativePath>videos/20250922083104_『Resplandor』 全三日公演.mp4</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\videos\20250922083104_『Resplandor』 全三日公演.mp4))</OriginalItemSpec>
+    </StaticWebAsset>
+  </ItemGroup>
+</Project>

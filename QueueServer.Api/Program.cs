@@ -1,14 +1,50 @@
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.Mvc; // for [FromServices]
 using Microsoft.EntityFrameworkCore;
 using QueueServer.Core.Data;
 using QueueServer.Core.Services;
 using QueueServer.Api.Hubs;
 using QueueServer.Api.Utils;
 using Serilog;
+using Serilog.Extensions.Hosting;
 using QueueServer.Api;
 using System.Text.Json.Serialization; // Tambahan untuk JsonStringEnumConverter
+using Microsoft.AspNetCore.Diagnostics;
+using System.Text.Json;
+using Microsoft.OpenApi.Models;
+using Shared.Contracts;
+using QueueServer.Core.Models;
+
+// Bootstrap Serilog sebelum membuat builder
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File(Path.Combine(AppContext.BaseDirectory, "Logs", "server-.log"),
+                  rollingInterval: RollingInterval.Day,
+                  retainedFileCountLimit: 7,
+                  shared: true)
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
-builder.AddSerilogLogging();
+builder.Host.UseSerilog(); // integrasikan Serilog dengan host
+
+// Registrasi logger & DiagnosticContext ke DI (untuk RequestLoggingMiddleware)
+builder.Services.AddSingleton<Serilog.ILogger>(Log.Logger);
+builder.Services.AddSingleton<DiagnosticContext>(sp =>
+    new DiagnosticContext(sp.GetRequiredService<Serilog.ILogger>()));
+
+// Naikkan batas body agar upload video besar tidak terputus
+builder.WebHost.ConfigureKestrel(o =>
+{
+    o.Limits.MaxRequestBodySize = 512L * 1024 * 1024; // 512 MB
+});
+
+builder.Services.Configure<FormOptions>(o =>
+{
+    o.MultipartBodyLengthLimit = 512L * 1024 * 1024;
+});
 
 // Lokasi DB
 var dataDir = Path.Combine(AppContext.BaseDirectory, "App_Data");
@@ -18,13 +54,25 @@ var dbPath = Path.Combine(dataDir, "queue.db");
 builder.Services.AddDbContext<QueueDbContext>(o =>
     o.UseSqlite($"Data Source={dbPath}"));
 
-builder.Services.AddSignalR();
-builder.Services.AddScoped<ISettingsService, SettingsService>();
-builder.Services.AddScoped<ITicketService, TicketService>();
-builder.Services.AddSingleton<HubBroadcaster>();
+// static files untuk melayani video dari wwwroot
+builder.Services.AddDirectoryBrowser();
+builder.Services.AddSignalR(); // pastikan ada
+builder.Services.AddControllers();
 
+// Tambahkan ini:
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "QueueServer API", Version = "v1" });
+});
+
+// batasi upload, bisa disesuaikan
+builder.Services.Configure<FormOptions>(o => { o.MultipartBodyLengthLimit = 512L * 1024 * 1024; });
+
+// Registrasi services
+builder.Services.AddScoped<QueueServer.Core.Services.ITicketService, QueueServer.Core.Services.TicketService>();
+builder.Services.AddScoped<QueueServer.Core.Services.ISettingsService, QueueServer.Core.Services.SettingsService>();
+builder.Services.AddScoped<QueueServer.Api.Utils.QueueService>();
 
 // KONFIG: Enum -> String
 builder.Services.ConfigureHttpJsonOptions(o =>
@@ -35,95 +83,185 @@ builder.Services.ConfigureHttpJsonOptions(o =>
 
 var app = builder.Build();
 
+// Tetap boleh pakai
+app.UseSerilogRequestLogging(); // log request
+
+// Jalankan migrasi + seed, tapi aman jika gagal
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<QueueDbContext>();
-    db.Database.Migrate();
-    var settings = scope.ServiceProvider.GetRequiredService<ISettingsService>();
-    await settings.EnsureDefaultsAsync();
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<QueueDbContext>();
+        db.Database.Migrate(); // AKTIFKAN KEMBALI
+        var settings = scope.ServiceProvider.GetRequiredService<QueueServer.Core.Services.ISettingsService>();
+        await settings.EnsureDefaultsAsync();
+        Log.Information("DB initialized");
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "DB init failed (migrate/seed)");
+        // biarkan server tetap hidup agar /api/debug/health bisa dicek
+    }
 }
 
+app.UseStaticFiles();
+app.MapControllers();
 app.MapHub<QueueHub>("/hub/queue");
 
-// Endpoint debug (untuk verifikasi cepat)
-app.MapGet("/api/debug/ping", () => Results.Ok(new { status = "ok" }));
+// Health & Ping
+app.MapGet("/api/debug/ping", () => Results.Ok(new { ok = true, time = DateTime.UtcNow }))
+   .Produces(StatusCodes.Status200OK);
 
-// Endpoint tiket & queue
-app.MapPost("/api/tickets", async (ITicketService svc, HubBroadcaster hub) =>
+app.MapGet("/api/debug/health", async ([FromServices] QueueDbContext db) =>
 {
-    var ticket = await svc.CreateTicketAsync();
-    await hub.TicketCreated(new { ticket.Id, ticket.TicketNumber });
-    return Results.Ok(ticket);
+    try
+    {
+        var canQuery = await db.Database.CanConnectAsync();
+        var settingsCount = await db.Settings.CountAsync();
+        return Results.Ok(new { ok = canQuery, settingsCount });
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Health check failed");
+        return Results.Problem(ex.Message, statusCode: 500);
+    }
 });
 
-app.MapPost("/api/queue/next/{counter:int}", async (int counter, ITicketService svc, HubBroadcaster hub, ILogger<Program> logger) =>
-{
-    logger.LogInformation("CallNext requested for counter {Counter}", counter);
-    var t = await svc.CallNextAsync(counter);
-    if (t == null) return Results.NotFound();
-    await hub.TicketCalled(new { t.Id, t.TicketNumber, t.CounterNumber });
-    return Results.Ok(t);
-});
+// + GET semua settings (dipakai Admin/Display)
+app.MapGet("/api/settings", async ([FromServices] QueueServer.Core.Services.ISettingsService s) =>
+    Results.Ok(await s.GetAllAsync()))
+   .Produces<IDictionary<string,string>>(StatusCodes.Status200OK);
 
-app.MapPost("/api/tickets/{id:int}/recall", async (int id, ITicketService svc, HubBroadcaster hub) =>
-{
-    var t = await svc.RecallAsync(id);
-    if (t == null) return Results.NotFound();
-    await hub.TicketCalled(new { t.Id, t.TicketNumber, t.CounterNumber, Recall = true });
-    return Results.Ok(t);
-});
-
-app.MapPost("/api/tickets/{id:int}/serveStart", async (int id, ITicketService svc, HubBroadcaster hub) =>
-{
-    var t = await svc.StartServingAsync(id);
-    if (t == null) return Results.NotFound();
-    await hub.TicketUpdated(new { t.Id, t.Status });
-    return Results.Ok(t);
-});
-
-app.MapPost("/api/tickets/{id:int}/complete", async (int id, ITicketService svc, HubBroadcaster hub) =>
-{
-    var t = await svc.CompleteAsync(id);
-    if (t == null) return Results.NotFound();
-    await hub.TicketUpdated(new { t.Id, t.Status });
-    return Results.Ok(t);
-});
-
-app.MapPost("/api/tickets/{id:int}/skip", async (int id, ITicketService svc, HubBroadcaster hub) =>
-{
-    var t = await svc.SkipAsync(id);
-    if (t == null) return Results.NotFound();
-    await hub.TicketUpdated(new { t.Id, t.Status });
-    return Results.Ok(t);
-});
-
-app.MapGet("/api/tickets/today", async (ITicketService svc) =>
-{
-    var list = await svc.GetTodayTicketsAsync();
-    return Results.Ok(list);
-});
-
-app.MapGet("/api/settings", async (ISettingsService s) =>
-{
-    var all = await s.GetAllAsync();
-    return Results.Ok(all);
-});
-
-app.MapPut("/api/settings", async (Dictionary<string,string> updates, ISettingsService s, HubBroadcaster hub, ILogger<Program> logger) =>
+// PUT settings (sudah ada)
+app.MapPut("/api/settings", async (
+    Dictionary<string, string> updates,
+    QueueServer.Core.Services.ISettingsService s,
+    [FromServices] IHubContext<QueueHub> hub,
+    ILogger<Program> logger) =>
 {
     foreach (var kv in updates)
-    {
         await s.SetValueAsync(kv.Key, kv.Value);
-        logger.LogInformation("Setting updated {Key}={Value}", kv.Key, kv.Value);
-    }
-    await hub.SettingsChanged(updates);
+
+    await hub.Clients.All.SendAsync("SettingsChanged");
     return Results.Ok();
 });
 
+// upload video
+app.MapPost("/api/media/upload", async (
+    HttpRequest req,
+    QueueServer.Core.Services.ISettingsService settings,
+    [FromServices] IHubContext<QueueHub> hub) =>
+{
+    try
+    {
+        // pastikan per-request limit cukup besar
+        var feat = req.HttpContext.Features.Get<IHttpMaxRequestBodySizeFeature>();
+        if (feat != null) feat.MaxRequestBodySize = 512L * 1024 * 1024;
+
+        if (!req.HasFormContentType) return Results.BadRequest("multipart/form-data required");
+        var form = await req.ReadFormAsync();
+        var file = form.Files.FirstOrDefault();
+        if (file is null || file.Length == 0) return Results.BadRequest("no file");
+
+        var webRoot = app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+        var videosDir = Path.Combine(webRoot, "videos");
+        Directory.CreateDirectory(videosDir);
+
+        var safeName = Path.GetFileNameWithoutExtension(file.FileName);
+        var ext = Path.GetExtension(file.FileName);
+        var name = $"{DateTime.UtcNow:yyyyMMddHHmmss}_{safeName}{ext}";
+        var outPath = Path.Combine(videosDir, name);
+
+        await using (var fs = new FileStream(outPath, FileMode.Create, FileAccess.Write, FileShare.None, 64 * 1024, useAsync: true))
+        {
+            await file.CopyToAsync(fs);
+        }
+
+        var url = $"/videos/{name}";
+        await settings.SetValueAsync("VideoPath", url);
+        await settings.SetValueAsync("ShowVideo", "true");
+
+        await hub.Clients.All.SendAsync(Shared.Contracts.HubEvents.SettingsChanged);
+        return Results.Ok(new { url });
+    }
+    catch (Exception ex)
+    {
+        Serilog.Log.Error(ex, "Upload failed");
+        return Results.Problem(ex.Message, statusCode: 500);
+    }
+})
+.Accepts<IFormFile>("multipart/form-data")
+.Produces(StatusCodes.Status200OK);
+
+// reset nomor
+app.MapPost("/api/admin/reset", async (
+    QueueServer.Api.Utils.QueueService svc,
+    [FromServices] IHubContext<QueueHub> hub) =>
+{
+    await svc.ResetAsync();
+    await hub.Clients.All.SendAsync("QueueReset");
+    return Results.Ok();
+})
+.Produces(StatusCodes.Status200OK);
+
+// Aktifkan Swagger (boleh hanya saat Development)
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "QueueServer API v1");
+    c.RoutePrefix = "swagger";
+});
 
 app.Lifetime.ApplicationStarted.Register(() =>
     Log.Information("QueueServer.Api started at {Time}", DateTime.Now));
+
+app.MapPost("/api/queue/next/{counter:int}", async (
+    int counter,
+    QueueServer.Core.Services.ITicketService svc,
+    IHubContext<QueueHub> hub) =>
+{
+    var t = await svc.CallNextAsync(counter);
+    if (t is null) return Results.NotFound();
+
+    // Broadcast ke semua klien
+    await hub.Clients.All.SendAsync(HubEvents.TicketCalled, new
+    {
+        t.Id,
+        t.TicketNumber,
+        t.CounterNumber
+    });
+
+    // Kembalikan ke Teller
+    return Results.Ok(new
+    {
+        t.Id,
+        t.TicketNumber,
+        Status = t.Status.ToString(),
+        t.CounterNumber
+    });
+})
+.Produces(StatusCodes.Status200OK)
+.Produces(StatusCodes.Status404NotFound);
+
+// Daftar tiket hari ini (dipakai Display untuk "Sedang Dilayani")
+app.MapGet("/api/tickets/today", async ([FromServices] QueueDbContext db) =>
+{
+    var today = DateOnly.FromDateTime(DateTime.Now);
+    var list = await db.Tickets
+        .Where(t => t.Date == today)
+        .OrderByDescending(t => t.CalledAt ?? DateTime.MinValue)
+        .ThenByDescending(t => t.Id)
+        .Select(t => new {
+            t.Id,
+            t.TicketNumber,
+            Status = t.Status.ToString(),
+            t.CounterNumber,
+            t.CalledAt
+        })
+        .ToListAsync();
+
+    return Results.Ok(list);
+})
+.Produces(StatusCodes.Status200OK);
 
 app.Run();

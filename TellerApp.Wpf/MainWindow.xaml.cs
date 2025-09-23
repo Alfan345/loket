@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Controls; // for controls referenced by name
 using Microsoft.AspNetCore.SignalR.Client;
 using Shared.Contracts; // gunakan konstanta HubEvents
+using Shared; // ClientConfig
 using Serilog;
 
 // NOTE: Ubah base address jika port server bukan 5000
@@ -14,8 +15,9 @@ namespace TellerApp.Wpf
 {
 public partial class MainWindow : Window
 {
+    private static readonly string ServerUrl = ClientConfig.LoadServerUrl();
     private HubConnection? _hub;
-    private readonly HttpClient _http = new() { BaseAddress = new Uri("http://localhost:5000") };
+    private readonly HttpClient _http = new() { BaseAddress = new Uri(ServerUrl) };
     private string _loket = "1";
     private bool _windowLoaded;
 
@@ -53,7 +55,7 @@ public partial class MainWindow : Window
         try
         {
             _hub = new HubConnectionBuilder()
-                .WithUrl("http://localhost:5000/hub/queue") // server maps MapHub<QueueHub>("/hub/queue")
+                .WithUrl($"{ServerUrl}/hub/queue")
                 .WithAutomaticReconnect()
                 .Build();
 
@@ -96,52 +98,26 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void NextButton_Click(object sender, RoutedEventArgs e)
+    private void SetStatus(string s)
     {
-        NextButton.IsEnabled = false;
-        SetStatus("Memanggil...");
         try
         {
-            var resp = await _http.PostAsync($"/api/queue/next/{_loket}", null);
-            if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
+            // selalu ke UI thread
+            if (!Dispatcher.CheckAccess())
             {
-                SetStatus("Kosong");
+                Dispatcher.Invoke(() => SetStatus(s));
+                return;
             }
-            else if (resp.IsSuccessStatusCode)
+            if (StatusText != null)
             {
-                var ticket = await resp.Content.ReadFromJsonAsync<TicketResponse>();
-                if (ticket != null)
-                {
-                    CurrentNumberText.Text = WithoutPrefix(ticket.TicketNumber);
-                    LoketLabel.Text = $"Loket: {ticket.CounterNumber}";
-                    SetStatus("Dipanggil");
-                }
-            }
-            else
-            {
-                SetStatus("Gagal panggil");
+                StatusText.Text = $"Status: {s}";
+                Serilog.Log.Information("Status -> {Status}", s);
             }
         }
         catch (Exception ex)
         {
-            SetStatus("Error panggil");
-            Console.WriteLine(ex);
+            Serilog.Log.Error(ex, "SetStatus failed");
         }
-        finally
-        {
-            NextButton.IsEnabled = true;
-        }
-    }
-
-    private void SetStatus(string s)
-    {
-        if (!_windowLoaded)
-        {
-            // Tunda sampai Loaded untuk menghindari NullReference.
-            Dispatcher.BeginInvoke(() => SetStatus(s));
-            return;
-        }
-        StatusText.Text = $"Status: {s}";
     }
 
     private void LoketCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -163,6 +139,49 @@ public partial class MainWindow : Window
         else
             SetStatus("Pengaturan dibatalkan");
         await Task.CompletedTask;
+    }
+
+    private async void NextButton_Click(object sender, RoutedEventArgs e)
+    {
+        NextButton.IsEnabled = false;
+        SetStatus("Memanggil...");
+        try
+        {
+            var resp = await _http.PostAsync($"/api/queue/next/{_loket}", null);
+            if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                SetStatus("Kosong");
+            }
+            else if (resp.IsSuccessStatusCode)
+            {
+                var ticket = await resp.Content.ReadFromJsonAsync<TicketResponse>();
+                if (ticket != null)
+                {
+                    CurrentNumberText.Text = WithoutPrefix(ticket.TicketNumber);
+                    LoketLabel.Text = $"Loket: {ticket.CounterNumber}";
+                    SetStatus("Dipanggil");
+                }
+                else
+                {
+                    SetStatus("Respon kosong");
+                }
+            }
+            else
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                Serilog.Log.Warning("Next failed {Code}: {Body}", resp.StatusCode, body);
+                SetStatus("Gagal panggil");
+            }
+        }
+        catch (Exception ex)
+        {
+            SetStatus("Error panggil");
+            Serilog.Log.Error(ex, "NextButton_Click");
+        }
+        finally
+        {
+            NextButton.IsEnabled = true;
+        }
     }
 }
 
