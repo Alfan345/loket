@@ -1,8 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "Y3WF3fi+uGs=",
+  "dgSpecHash": "1oy7ILjxCh0=",
   "success": true,
   "projectFilePath": "D:\\Kuliah\\loket\\QueueSystem\\Shared\\Shared.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\ASUS\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\8.0.19\\microsoft.netcore.app.runtime.win-x64.8.0.19.nupkg.sha512",
+    "C:\\Users\\ASUS\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\8.0.19\\microsoft.windowsdesktop.app.runtime.win-x64.8.0.19.nupkg.sha512",
+    "C:\\Users\\ASUS\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\8.0.19\\microsoft.aspnetcore.app.runtime.win-x64.8.0.19.nupkg.sha512"
+  ],
   "logs": []
 }

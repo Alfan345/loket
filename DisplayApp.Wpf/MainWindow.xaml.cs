@@ -27,6 +27,77 @@ namespace DisplayApp.Wpf
 {
     public partial class MainWindow : Window
     {
+        // ==== Re-added missing backing fields ====
+        // Settings / polling
+        private readonly DispatcherTimer _settingsPollTimer = new() { Interval = TimeSpan.FromSeconds(10) };
+        private string? _settingsSignature;
+
+        // SignalR hub
+        private HubConnection? _hub;
+
+        // Recent calls (for display list)
+        private readonly ObservableCollection<TicketDto> _recentCalls = new();
+        private const int MaxRecent = 10;
+        private int _activeCounter = 0;
+
+        // Clock
+        private readonly DispatcherTimer _clockTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+
+        // Marquee (running text)
+        private readonly DispatcherTimer _marqueeTimer = new() { Interval = TimeSpan.FromMilliseconds(40) };
+        private double _marqueeTextWidth;
+        private double _marqueeX;
+        private const double MarqueeSpeed = 2.0; // px per tick
+
+        // Video / VLC
+        private string? _videoPath;
+        private LibVLC? _libvlc;
+        private VlcMediaPlayer? _vlcPlayer;
+
+        // Logos rotation
+        private readonly DispatcherTimer _logoTimer = new() { Interval = TimeSpan.FromSeconds(6) };
+        private readonly List<string> _logoFiles = new();
+        private bool _logoRotationStarted = false;
+        private int _logoIndex = -1;
+        private bool _logoUseA = true;
+
+        // Audio (if not already present elsewhere)
+        private static string? FindAudio(string fileName)
+        {
+            var roots = new[]
+            {
+                AppContext.BaseDirectory,
+                Path.Combine(AppContext.BaseDirectory, "audio"),
+                Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..","audio")),
+                Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..","..","audio")),
+            };
+            foreach (var r in roots)
+            {
+                var p = Path.Combine(r, fileName);
+                if (File.Exists(p)) return p;
+            }
+            return null;
+        }
+
+        // (If constructor lost timer wiring, ensure this runs)
+        private void InitTimers()
+        {
+            _settingsPollTimer.Tick += async (_, _) => await LoadSettings();
+            _clockTimer.Tick += (_, _) => ClockText.Text = DateTime.Now.ToString("HH:mm:ss");
+            _marqueeTimer.Tick += MarqueeTimer_Tick;
+            _logoTimer.Tick += LogoTimer_Tick;
+        }
+
+        // Call this early in ctor after InitializeComponent()
+        private void EnsureInitOnce()
+        {
+            if (!_clockTimer.IsEnabled)
+            {
+                InitTimers();
+                _clockTimer.Start();
+            }
+        }
+
         // --- Audio: single player serial ---
         private readonly SemaphoreSlim _audioLock = new(1, 1);
         private readonly Queue<string> _audioQueue = new();
@@ -37,47 +108,18 @@ namespace DisplayApp.Wpf
 
         // Server & HTTP
         private static readonly string ServerUrl = ClientConfig.LoadServerUrl();
-        private readonly HttpClient _http = new() { BaseAddress = new Uri(ServerUrl) };
-
-        private HubConnection? _hub;
-        private readonly DispatcherTimer _clockTimer = new();
-        private readonly DispatcherTimer _marqueeTimer = new();
-        private double _marqueeX = 0;
-        private double _marqueeTextWidth = 0;
-        private const double MarqueeSpeed = 2.5;
-        private string _runningText = "Selamat datang di layanan antrian";
-        private string? _videoPath;
-        private string? _logoPath;
-
-        // UI state
-        private readonly ObservableCollection<string> _recentCalls = new(); // FIX: daftar panggilan terbaru
-        private int _activeCounter;                                         // FIX: loket aktif untuk display
-
-        // ROTASI LOGO
-        private readonly DispatcherTimer _logoTimer = new();
-        private bool _logoRotationStarted;   // keep only this one
-        private readonly List<string> _logoFiles = new();
-        private int _logoIndex = -1;
-        private bool _logoUseA = true;
-        private const int LogoRotateSeconds = 6;
-
-        private readonly DispatcherTimer _settingsPollTimer = new();
-        private string? _settingsSignature;
-
-        // VLC fallback
-        private LibVLC? _libvlc;                    // FIX
-        private VlcMediaPlayer? _vlcPlayer;         // FIX
-
-        private static string AudioRoot => Path.Combine(AppContext.BaseDirectory, "audio");
-
-        private static string? FindAudio(string fileName)
-        {
-            var p = Path.Combine(AudioRoot, fileName);
-            return File.Exists(p) ? p : null;
-        }
-
+        private readonly HttpClient _http;
         public MainWindow()
         {
+            try
+            {
+                _http = new HttpClient { BaseAddress = new Uri(ServerUrl) };
+            }
+            catch
+            {
+                // fallback aman
+                _http = new HttpClient { BaseAddress = new Uri("http://localhost:5000") };
+            }
             InitializeComponent();
             Loaded += async (_, _) =>
             {
@@ -171,8 +213,9 @@ namespace DisplayApp.Wpf
 
             AddRecentCall(new TicketDto
             {
-                TicketNumber = ticketNumber,
-                CounterNumber = counter
+                Number = ticketNumber,
+                Counter = counter,
+                CalledAt = DateTime.Now
             });
 
             AnimateActiveFlash();
@@ -180,15 +223,20 @@ namespace DisplayApp.Wpf
             _ = Dispatcher.InvokeAsync(async () => await RefreshServedLines());
         }
 
-        private void AddRecentCall(TicketDto t)
+        private void AddRecentCall(string number, int counter)
         {
-            var seq = TryExtractSequence(t.TicketNumber, out int s) ? s.ToString() : t.TicketNumber;
-            var text = $"Nomor {seq} Loket {t.CounterNumber}";
-            if (_recentCalls.FirstOrDefault() == text)
-                return;
-
-            _recentCalls.Insert(0, text);
-            while (_recentCalls.Count > 3)
+            if (string.IsNullOrWhiteSpace(number)) return;
+            if (_recentCalls.Count > 0 && _recentCalls[0].Number == number) return;
+            _recentCalls.Insert(0, new TicketDto { Number = number, Counter = counter, Time = DateTime.Now });
+            while (_recentCalls.Count > MaxRecent)
+                _recentCalls.RemoveAt(_recentCalls.Count - 1);
+        }
+        private void AddRecentCall(TicketDto dto)
+        {
+            if (dto == null || string.IsNullOrWhiteSpace(dto.Number)) return;
+            if (_recentCalls.Count > 0 && _recentCalls[0].Number == dto.Number) return;
+            _recentCalls.Insert(0, dto);
+            while (_recentCalls.Count > MaxRecent)
                 _recentCalls.RemoveAt(_recentCalls.Count - 1);
         }
 
@@ -226,9 +274,11 @@ namespace DisplayApp.Wpf
                 var latestPerCounter = tickets
                     .Where(t => (t.Status == "CALLING" || t.Status == "SERVING") && t.CounterNumber != null)
                     .GroupBy(t => t.CounterNumber!.Value)
-                    .Select(g => g.OrderByDescending(x => x.CalledAt ?? DateTime.MinValue).ThenByDescending(x => x.Id).First())
-                    .Where(t => _activeCounter == null || t.CounterNumber != _activeCounter)
-                    .OrderByDescending(t => t.CalledAt ?? DateTime.MinValue)
+                    .Select(g => g
+                        .OrderByDescending(x => x.CalledAt)
+                        .ThenByDescending(x => x.Id).First())
+                    .Where(t => t.CounterNumber != _activeCounter)          // _activeCounter int (non-nullable)
+                    .OrderByDescending(t => t.CalledAt)                     // CalledAt sudah non-nullable
                     .ThenByDescending(t => t.Id)
                     .Take(3)
                     .ToList();
@@ -863,13 +913,30 @@ namespace DisplayApp.Wpf
         }
 
         // DTO
-        public class TicketDto
+        private sealed class TicketDto
         {
-            public int Id { get; set; }
-            public string TicketNumber { get; set; } = "";
+            // Tambahan agar .ThenByDescending(x => x.Id) tidak error
+            public int Id { get; set; } = 0;
+            public string Number { get; set; } = "";
+            public int Counter { get; set; }
             public string Status { get; set; } = "";
-            public int? CounterNumber { get; set; }
-            public DateTime? CalledAt { get; set; }
+            public DateTime CalledAt { get; set; } = DateTime.Now;
+            public DateTime Time
+            {
+                get => CalledAt;
+                set => CalledAt = value;
+            }
+            public string TicketNumber
+            {
+                get => Number;
+                set => Number = value;
+            }
+            public int? CounterNumber
+            {
+                get => Counter;
+                set { if (value.HasValue) Counter = value.Value; }
+            }
+            public override string ToString() => $"{Number} (L{Counter})";
         }
     }
 }

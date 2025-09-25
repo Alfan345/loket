@@ -1,0 +1,39 @@
+{
+  "Version": 1,
+  "Hash": "D0dxcGAOh4Zjvs2DgBlO3mg0O7hJQQAH8uFR1lXolg8=",
+  "Source": "QueueServer.Api",
+  "BasePath": "_content/QueueServer.Api",
+  "Mode": "Default",
+  "ManifestType": "Publish",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "QueueServer.Api\\wwwroot",
+      "Source": "QueueServer.Api",
+      "ContentRoot": "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\wwwroot\\",
+      "BasePath": "_content/QueueServer.Api",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\wwwroot\\videos\\20250923024618_M!LK - アオノオト(Official Music Video).mp4",
+      "SourceId": "QueueServer.Api",
+      "SourceType": "Discovered",
+      "ContentRoot": "D:\\Kuliah\\loket\\QueueSystem\\QueueServer.Api\\wwwroot\\",
+      "BasePath": "_content/QueueServer.Api",
+      "RelativePath": "videos/20250923024618_M!LK - アオノオト(Official Music Video).mp4",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\videos\\20250923024618_M!LK - アオノオト(Official Music Video).mp4"
+    }
+  ]
+}

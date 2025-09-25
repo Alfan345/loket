@@ -4,39 +4,62 @@ using System.Text.Json;
 
 namespace Shared
 {
-    public class ClientConfig
+    public static class ClientConfig
     {
-        public string ServerUrl { get; set; } = "http://localhost:5000";
+        private static readonly string ConfigDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "QueueSystem");
+        private static readonly string ConfigFile = Path.Combine(ConfigDir, "config.json");
 
-        public static string ConfigDir =>
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "QueueSystem");
-
-        public static string ConfigPath => Path.Combine(ConfigDir, "config.json");
-
-        public static ClientConfig Load()
+        public static string LoadServerUrl()
         {
             try
             {
-                if (File.Exists(ConfigPath))
+                if (File.Exists(ConfigFile))
                 {
-                    var json = File.ReadAllText(ConfigPath);
-                    var cfg = JsonSerializer.Deserialize<ClientConfig>(json);
-                    if (cfg != null && !string.IsNullOrWhiteSpace(cfg.ServerUrl))
-                        return cfg;
+                    var json = File.ReadAllText(ConfigFile).Trim();
+                    if (!string.IsNullOrWhiteSpace(json))
+                    {
+                        var obj = System.Text.Json.JsonDocument.Parse(json);
+                        if (obj.RootElement.TryGetProperty("ServerUrl", out var v))
+                        {
+                            var raw = v.GetString() ?? "";
+                            return Sanitize(raw);
+                        }
+                    }
                 }
             }
             catch { }
-            return new ClientConfig();
+            return "http://localhost:5000";
         }
 
-        public static void Save(ClientConfig cfg)
+        public static void SaveServerUrl(string url)
         {
-            Directory.CreateDirectory(ConfigDir);
-            var json = JsonSerializer.Serialize(cfg, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(ConfigPath, json);
+            try
+            {
+                Directory.CreateDirectory(ConfigDir);
+                var sanitized = Sanitize(url);
+                File.WriteAllText(ConfigFile, "{\n  \"ServerUrl\": \"" + sanitized + "\"\n}");
+            }
+            catch { }
         }
 
-        public static string LoadServerUrl() => Load().ServerUrl.TrimEnd('/');
-        public static void SaveServerUrl(string url) => Save(new ClientConfig { ServerUrl = url.TrimEnd('/') });
+        private static string Sanitize(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return "http://localhost:5000";
+
+            raw = raw.Trim();
+            // Jika user hanya isi IP:PORT atau hostname:PORT
+            if (!raw.Contains("://"))
+                raw = "http://" + raw;
+
+            if (!Uri.TryCreate(raw, UriKind.Absolute, out var uri) ||
+                (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+                return "http://localhost:5000";
+
+            // Hilangkan trailing slash
+            return uri.ToString().TrimEnd('/');
+        }
     }
 }

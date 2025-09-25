@@ -17,14 +17,22 @@ public partial class MainWindow : Window
 {
     private static readonly string ServerUrl = ClientConfig.LoadServerUrl();
     private HubConnection? _hub;
-    private readonly HttpClient _http = new() { BaseAddress = new Uri(ServerUrl) };
+    private readonly HttpClient _http;
     private string _loket = "1";
     private bool _windowLoaded;
 
     public MainWindow()
     {
+        try
+        {
+            _http = new HttpClient { BaseAddress = new Uri(ServerUrl) };
+        }
+        catch
+        {
+            _http = new HttpClient { BaseAddress = new Uri("http://localhost:5000") };
+        }
         InitializeComponent();
-        Log.Information("Teller MainWindow constructed");
+        Log.Information("Teller MainWindow constructed (BaseUrl={Url})", _http.BaseAddress);
         KeyDown += (_, e) => { if (e.Key == Key.Escape) Close(); };
         Loaded += async (_, _) =>
         {

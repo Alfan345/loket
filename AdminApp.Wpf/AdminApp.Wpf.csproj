@@ -5,6 +5,9 @@
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>..\Assets\admin.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Shared\Shared.csproj" />
   </ItemGroup>

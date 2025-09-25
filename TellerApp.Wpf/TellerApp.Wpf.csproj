@@ -5,6 +5,9 @@
     <OutputType>WinExe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>..\Assets\teller.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Shared\Shared.csproj" />
   </ItemGroup>

@@ -18,17 +18,27 @@ namespace AdminApp.Wpf
         {
             InitializeComponent();
             var url = ClientConfig.LoadServerUrl();
-            if (string.IsNullOrWhiteSpace(url)) url = "http://localhost:5000";
             ServerUrlBox.Text = url;
-            SetHttp(url);
+            if (!TrySetHttp(url))
+                Status("URL tidak valid, perbaiki lalu klik Sambungkan");
 
-            Loaded += async (_, __) => await LoadSettingsAsync(); // auto-muat saat dibuka
+            Loaded += async (_, __) => await LoadSettingsAsync();
         }
 
+        private bool TrySetHttp(string url)
+        {
+            try
+            {
+                _http = new HttpClient { BaseAddress = new Uri(url) };
+                return true;
+            }
+            catch { return false; }
+        }
+
+        // Backward compatibility (kode lama masih memanggil SetHttp)
         private void SetHttp(string url)
         {
-            try { _http = new HttpClient { BaseAddress = new Uri(url) }; }
-            catch { }
+            TrySetHttp(url);
         }
 
         private async void ConnectAndSave_Click(object sender, RoutedEventArgs e)
@@ -36,7 +46,11 @@ namespace AdminApp.Wpf
             try
             {
                 var url = ServerUrlBox.Text.Trim().TrimEnd('/');
-                SetHttp(url);
+                if (!TrySetHttp(url))
+                {
+                    Status("Format URL tidak valid (contoh: http://192.168.1.10:5000)");
+                    return;
+                }
                 var r = await _http.GetAsync("/api/debug/ping");
                 if (!r.IsSuccessStatusCode) { Status("Gagal terhubung: " + r.StatusCode); return; }
                 ClientConfig.SaveServerUrl(url);
