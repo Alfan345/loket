@@ -2,4 +2,3 @@
 *.mkv
 QueueServer.Api/wwwroot/videos/
 publish/
-installer/
